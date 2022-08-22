@@ -54,79 +54,77 @@ Table of contents:
 
 ## What is global state?
 
-In the React world the the UI part of apps are made up of components, which are small units of code that render a view, and all of them are part of what is called a component tree.
+In the React world the UI part of apps are made up of components, which are small units of code that render a view, and all of them are part of what is called a component tree.
 
-Component tree chart here.
+Component tree chart here. ❌
 
 What if we'd like to access some piece of data on different parts of the app? We'd be forced to keep state in a parent component that wraps the interested parts of the component tree.
 
-Then, we could pass down the data via props to the interested parts, but that would lead to prop drilling. But hang on, what is prop drilling? Is when the same prop is passed through a long chain of components, making it repetitive an unnecessary.
+Then, we could pass down the data via props to the interested parts, but that would lead to prop drilling. 
 
-Prop drilling chart here
+But hang on, what is prop drilling? Is when the same prop is passed through a long chain of components, making it repetitive and difficult to maintain.
+
+Prop drilling chart here ❌
 
 ### Is Context API the solution?
 
 There's a solution that is widely adopted in the React community to fix the propr drilling issue, and is the usage of the built in `Context API`, but it presents these 2 downsides:
 
-- It's not meant and optimised for passing down high frequency changing data, like the `isFavourite` boolean property of a product item, but was meant for passing down more static things like `theme` variables, login status, language, and so on.
+- It's not meant and optimised for passing down high frequency changing data, like the `isFavourite` boolean property of a product item in an ecommerce app, but was meant for passing down more static things like `theme` variables, `login status`, `language`, and so on.
+- After any of the data passed down via props through the Context API changes, all the components wrapped by the Provider that uses useContext will re-render, no matter if they use that specific piece of data or not. That could be patched by using the `useMemo` hook, but using that function is not for free, and will slow the performance of component tree re-rendering cycle and bloat your code.
 
-- After any of the data passed down via props through the Context API changes, all the components wrapped by the Provider that uses useContext will re-render, no matter if they use that specific piece of data or not. That could be patched by using `useMemo` but using that function is not for free, and will slow the performance of component tree re-rendering cycle and bloat your code.
-
-When I say frequency, I mean a property changing at least twice in the lifecycle of the app. Usually, those changes are triggered by a user input, like clicking a heart icon on the product card on a ecommerce store, to mark it is as favourite.
+When I say frequency, I mean a property changing at least twice in the lifecycle of the app. Usually, those changes are triggered by a user input, like the mentioned example of clicking a heart icon on the product card, to mark it is as favourite.
 
 So, to anwser the question `Is Context API the solution?` It might not.
 
-To sum it up, using Context is a way to avoid prop drilling, but it's still keeping state inside a React component, that is part of the component tree, and that way, the architecture is kind of tied to that limitation of always choosing a parent component to hold that state.
+To sum it up, using Context is a way to avoid prop drilling, but it's still keeping state **inside** a React component, that is part of the **component tree**, and that way, the architecture is tied to that limitation of always choosing a parent component to hold that state.
 
-To see the downsides of the `Context API` in action, go to the Bonus section.
+If you'r interested in seeing the usage of the `Context API` and it's limitations, check out this great article: https://kentcdodds.com/blog/how-to-use-react-context-effectively.
 
 ## State management solution libraries
 
-This issue of keeping state in React, without hitting the problem of prop drilling, has been address initialy by the [Redux](https://redux.js.org/) library, by keeping state outside components.
+This issue of keeping state in React without hitting the problem of prop drilling, has been address initialy by the [Redux](https://redux.js.org/) library, by keeping state **outside components**.
 
-Storing the state of the app outisde the component tree , was the thing that made this library the go-to management solution for React, in other words, decoupling the data and the UI.
+Storing the state of the app outisde the component tree was the thing that made this library the go-to management solution for React, in other words, decoupling the app state and the UI components.
 
-A store is created using Redux, and then components can subscribe to changes to it, and dispatch actions that modify that state. Other libraries need to be added on top of Redux to perform asynchronous operations (or called side effects) before updating the state, like 
+How does Redux work work? A store is created and then components can subscribe to changes to it, and dispatch actions that modify that state. Other libraries need to be added on top of Redux to perform asynchronous operations (or called side effects) before updating the state, like [Redux-Saga](https://redux-saga.js.org/) and [Redux-Thunk](https://github.com/reduxjs/redux-thunk).
 
 There other state management solutions out there as well, like [Zustand]([Zustand Documentation](https://docs.pmnd.rs/zustand/introduction)), [Jotai](https://jotai.org/) , [Recoil](https://recoiljs.org/) (still in beta), [Rematch](https://rematchjs.org/) and [MobX]([README · MobX](https://mobx.js.org/README.html)).
 
 To have an idea of the usage of the mentioned libraries, check out the chart here [@rematch/core vs jotai vs mobx vs react-redux vs recoil vs zustand | npm trends](https://www.npmtrends.com/@rematch/core-vs-jotai-vs-mobx-vs-react-redux-vs-recoil-vs-zustand)
 
-Using libraries could be a great idea, but in this tutorial, you'll learn how to use the built in tools React has to offers to solve our problems, which is `hooks` in this case, so you can have a better knowlegde or React basics.
+Using libraries could be a great idea, but in this tutorial, you'll learn how to use the built in tools React offers to solve our problems, which are `hooks` in this case, so you can, at the end of the article, have a better knowlegde or React basics.
 
-So, the plan for this tutorial is to use **hooks** and
+So, the plan for this tutorial is to use a **React custom hook** to
 
- 👉 **keep state outside of components** 👈
+ 👉 **keep state outside of components** 👈 and **manage global state** with them.
 
 ## What are hooks?
 
-If you know about hooks, feel free to jump to section ------>
+If you know about hooks, feel free to jump to section ❌
 
-They are **functions** that start with the name `use` and then the name of something else, like `State`, giving the full name  `useState`, as an example.
+Hooks are **functions** that start with the name `use` and then the name of something else, like `State`, giving the full name  `useState`, as an example.
 
 There are:
 
-- **built in hooks**, like `useState`, and `useEffect`, `useCallback`, etc, that come already built in inside the React code and we can import them from there.
+- **built in hooks**, like `useState`, and `useEffect`, `useCallback`, etc, that come already built in inside the React library code and we can import them from there.
   They help updating the state and do things when some `state` or `props` change on functional components, among other things.
   `useState`, and` useEffect` made the full switch from class based to functional components possible.
   
   You can have a look at hooks here: https://reactjs.org/docs/hooks-intro.html
 
-- **Custom hooks** that we can use in components, and they're helpful to move stateful logic/side effects outisde the component function, but that logic is still being used inside the component via the hook, pretty neat, isn't it?
+- **Custom hooks** that we can use in components and other custom hooks, and they're helpful to move stateful logic/side effects outisde functional components so it can be re-used and at the same time, make the components leaner.
 
 There are certain rules when using these hooks:
-Rules of hooks pdf image here.
+![](./images/rules-of-hooks-01.jpg)
 
-In this tutorial, **we'll use a custom hook to create a global store**, so let's dive into it now.
+![](./images/rules-of-hooks-02.jpg)
 
-Let's see 2 custom hooks to understand them in depth, all with code examples and repos.
-
-⏭If you are fluent with hooks, feel free to jump straight to this section:
-SECTION HERE.
+In the coming sections, we'll take a look at 2 custom hooks to understand them in depth, all with code examples and repos.
 
 ## Let's build our first custom hook
 
-What if we have two components, `Posts.js` and `Widget.js`, that need to show a list of posts?
+What if we have two components, `Posts.js` and `Widget.js`, that need to show a list of posts from an API with different markup and amount of posts?
 
 Post.js only displays the first 10 posts from the API.
 
@@ -156,6 +154,7 @@ const Posts = props => {
 });
   return (
 // React.fragments and title
+    // add title here
       <ul>
           {posts}
       </ul>
@@ -187,12 +186,13 @@ const Widget = props => {
       // and if it works wihtout it.
     }, []);
 
-  // then apiData is used in the template
+  // then apiData is used in the template to show only 3 posts
   const posts = apiData.slice(0,2).map(item => {   
     return <li>{item.title}</li>;
 });
   return (
 // React.fragments and title
+    // change to <ol>
       <ul>
           {posts}
       </ul>
@@ -205,7 +205,7 @@ export default Widget;
 If we look at both components, we see a lot of duplication:
 
 ```jsx
-// ducplicated code
+// duplicated code
 const [apiData, setApiData] = useState([]);
 
     useEffect(() => {
@@ -227,7 +227,7 @@ The logic we need to abstract needs to call an API when the first render of `Pos
 If we put all the logic into a normal function, like this:
 
 ```jsx
-// wrong approach
+// WRONG APPROACH!!
 
 export const duplicatedCode = () => {
 const [apiData, setApiData] = useState([]);
@@ -246,24 +246,24 @@ const [apiData, setApiData] = useState([]);
 }
 ```
 
-First, we would get an error saying: `error -here`
+First, we would get an error saying: `error -here` ❌
 
-And that makes sense: what would be the sake of having functions that update the state and do things at certain points of the component life cycle, if **the function has no way to know what's going on inside the components calling this hook (`Posts.js` and `Widget.js`)?** 
+The problem here is that the piece of logic we want to abstract contains built in hooks, like `useState` and `useEffec`, which are tied to the component lifecycle and state.
 
-Even having those  `useEffect` and `useState` built in hooks are inside that logic, that is not enough.
+**The function has no way to know what's going on inside the components calling this hook (`Posts.js` and `Widget.js`)?** 
+
+Even having those  `useEffect` and `useState` built in hooks inside that logic is not enough.
 
 So, **the problem is the function needs to be more connected to what's going on inside the component.**
 
-That's why the React team decided to create **custom hooks** 🎉
+And that's what **custom hooks** solve! 🎉
 
-Custom hooks can have any built in hooks inside it, like `useEffect` and `useState` (and also other custom hooks, like `useWhatever`) so every time the `useState` runs inside the the hook, is the same as running that hook at the same time inside `Posts.js` or `Widget.js`, and everytime the component re-renders, the `useEffect` function is called inside the hook.
+Custom hooks can have any built in hooks inside it, like `useEffect` and `useState` (and also other custom hooks, like `useWhatever`) so every time the component that uses the hook re-renders, `useState` runs inside the the hook, and everytime we set up state inside the hook using `useState`, is the same as setting up state inside the component 🤯
 👉 That's our connection problem solved! 👈
-
-💡What happens in the custom hook happens at the same time inside the component, and viceversa!
 
 It can take you some time around to wrap your head around this idea 🥴, but over time it will become natural 😌.
 
-Here is the custom hook `useApi` that will solve our code duplication problem:
+Here is the custom hook called `useApi` that will solve our code duplication problem:
 
 ```jsx
 // useApi.js
@@ -292,25 +292,29 @@ export default useApi;
 
 Here is the code explained step by step:
 
-1. we need to import the built in hooks `useEffect` and `useState`, just as we do in regular React component.
+1. We need to import the built in hooks `useEffect` and `useState` from the React library.
 
-2. Then, we create a function (Yes! custom hooks are functions) BUT, we need to start the name with `use` that's the only condition React establised for using built in hooks (and other custom hooks) inside functions that are not React component functions.
+2. Then, we create a function (Yes! custom hooks are functions) BUT, we need to start its name with `use`.
 
-3. We initialize the state with `const [apiData, setApiData] = useState([]);` and that's the same is initializing state inside the component `Posts.js` or `Widget.js`.
+3. We initialize the state as an empty arrayby typing: `const [apiData, setApiData] = useState([]);` and that's the same is initializing state inside the component `Posts.js` or `Widget.js`.
 
-4. Once the component `Posts.js` or `Widget.js` has been rendered, the second time it re-renders, the `useEffect` function inside `useApi` is called again, and that's when the API is hit.
+4. Once the component `Posts.js` or `Widget.js` has been rendered, the second time it re-renders, the `useEffect's` callback function is called again, and that's when the API is hit.
    
-   As a side note, if we had another `useEffect` inside `Posts.js` for example, that function will be called **at the same time** as the useEffect inside `useApi`.
+   As a side note, if we had another `useEffect` inside `Posts.js` for example, that function will be called **at the same time** as the `useEffect` inside `useApi`.
 
-5. We return the `apiData` as we wanna display it in the component template (JSX). The good thing is that when `apiData` changes is update inside `useApi` hook, that will trigger a re-render on `Posts.js` and the updated value of `useApi` will be reflected in the template!
+5. We return the `apiData` array, as we wanna use it for displaying some posts in the UI. The good thing is that when the variable `apiData` is updated inside `useApi` hook, that will trigger a re-render on `Posts.js` or `Widget.js` and the updated value of `useApi` will be reflected on the template!
 
-6. Then we export the hook, so we can use it in other part of our app.
+6. Then we export the hook, so we can call it inside components.
 
 💡Useful notes about the `useEffect` dependacy array:
 
-1. the `useEffect` dependancies array doesn't have `setApiData` added to it as it's a built in function of React that never changes (guaranteed by React).
+1. the `useEffect` dependancies array doesn't have `setApiData` added to it as it's a built in function of React that never changes (guaranteed by React), so it's the same pointer on re-renders
 
 2. If you have functions as a dependancy, make sure you wrap them with `useCallback` so the they are the same object when the component re-renders
+
+   // ❌ add examples of creating functions inside and outside the useEffect hook
+
+   
 
 ### Let's consume the custom hook
 
