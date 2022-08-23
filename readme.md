@@ -310,7 +310,24 @@ Here is the code explained step by step:
 
 1. the `useEffect` dependancies array doesn't have `setApiData` added to it as it's a built in function of React that never changes (guaranteed by React), so it's the same pointer on re-renders
 
-2. If you have functions as a dependancy, make sure you wrap them with `useCallback` so the they are the same object when the component re-renders
+2. If you have functions as a dependancy, make sure you wrap them with `useCallback` so the they are the same object when the component re-renders, like this:
+
+   ````
+   const SomeComponent = () => {
+   
+     // when there are re-renders, someFunction will be the same JS pointer
+   	const someFunction = useCallback(() => {
+   		// function body here
+   	},[]);
+   	
+   	useEffect(() => {
+   		someFunction();
+   		// some other code here
+   	}, [someFunction])
+   }
+   ````
+
+   
 
    // ❌ add examples of creating functions inside and outside the useEffect hook
 
