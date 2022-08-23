@@ -118,6 +118,7 @@ There are:
 There are certain rules when using these hooks:
 ![](./images/rules-of-hooks-01.jpg)
 
+
 ![](./images/rules-of-hooks-02.jpg)
 
 In the coming sections, we'll take a look at 2 custom hooks to understand them in depth, all with code examples and repos.
@@ -313,24 +314,39 @@ Here is the code explained step by step:
 2. If you have functions as a dependancy, make sure you wrap them with `useCallback` so the they are the same object when the component re-renders, like this:
 
    ````
+   // useCallback approach
+   
    const SomeComponent = () => {
    
      // when there are re-renders, someFunction will be the same JS pointer
-   	const someFunction = useCallback(() => {
+   	const someFunction = 👉 useCallback(() => {
    		// function body here
    	},[]);
    	
    	useEffect(() => {
    		someFunction();
    		// some other code here
-   	}, [someFunction])
+   	}, [👉someFunction])
    }
    ````
 
+   ````
+   // workaround
    
-
-   // ❌ add examples of creating functions inside and outside the useEffect hook
-
+   const SomeComponent = () => {
+   	useEffect(() => {
+   	 // we define the function inside the useEffect hook
+   	  const someFunction(){
+   	    // function body here
+   		}
+   		someFunction();
+   		// some other code here
+   	}, [])
+   }
+   ````
+   
+   
+   
    
 
 ### Let's consume the custom hook
@@ -344,7 +360,7 @@ import React from 'react';
 import useApi from '../../useApi-hook/useApi';
 
 const Posts = props => {
-    const apiData = useApi();
+    const apiData = 👉 useApi();
 
   const posts = apiData.slice(0,9).map(item => {   
     return <li>{item.title}</li> add body
@@ -368,7 +384,7 @@ import React from 'react';
 
 const Widget = props => {
 
- const apiData = useApi();
+ const apiData = 👉 useApi();
 
   const posts = apiData.slice(0,2).map(item => {   
     return <li>{item.title}</li>;
@@ -386,17 +402,18 @@ export default Widget;
 
 The component looks much leaner, and many other components can use that custom hook to query for data, that's great!
 
-The only downside is that for every component using the custom hook, a new request to the API is made, but that can be fixed, you'll see the solution by the end of this tutorial. 
+The only downside is that for every component using the custom hook, a new request to the API is made, but that can be fixed, you'll see the solution by the end of this tutorial. One way to check for this it to check the `Network` tab, and we'll see as many `GET` requests to the API as many components using that hook are shown on the screen.
 
-duplication of network requests here-------->
-
-That duplication of Network requests shows as that the the fetch request was fired twice, once for each component using the custom hook.
-Another way to check how many times the fetch function was fired, is to set a `debugger` , like this:
+Another way to check how many times the fetch function was fired, is to add a `debugger`to the hook , like this:
 
 ```jsx
 debbuger;
 const rawData = await fetch("https://jsonplaceholder.typicode.com/posts");
 ```
+
+and open the developer tools of your browser. We'll get the code stoped as many times as the number of components on the screen using that hook.
+
+
 
 ## A more complex hook example
 
@@ -406,7 +423,9 @@ There are more things hooks can do:
 
 2. Return objects, arrays, anything!
 
-Let's image we have this two components, `App.js` and `NewTask.js`  connect to an API to read and create some tasks respectively:
+💡 Remember: hooks are functions, so they can take arguments and return any type of data
+
+Let's image we have these two components, `App.js` and `NewTask.js` that connect to an API to read and create some tasks respectively:
 
 ```jsx
 // App.js
@@ -476,7 +495,7 @@ export default App;
 ```jsx
 // NewTask.js
 // it adds new tasks to the database in the backend
-// and updates the app state `tasks`
+// and updates the App's component state `tasks`
 
 import { useState } from 'react';
 
@@ -529,7 +548,7 @@ const NewTask = (props) => {
 export default NewTask;
 ```
 
-The code common to both components is:
+The code that's common to both components is:
 
 ```jsx
  setIsLoading(true);
@@ -593,7 +612,7 @@ const useHttp = () => {
 export default useHttp;
 ```
 
-The hook is returning these things:
+The hook is returning these an object in this case, with 3 keys:
 
 1. `isLoading` of type `boolean`
 
@@ -603,7 +622,7 @@ The hook is returning these things:
    
    a. `requestConfig`, that configures the http call with the appropiate `url`, `method`, `headers` and `body`.
    
-   b. Another function, call `applyData`, that can update the UI by changing the state of the app.
+   b. A callback function called `applyData`, that can update the UI by changing the state of the app.
 
 You might notice the `useCallback` built in hook here:
 
@@ -640,11 +659,11 @@ function App() {
   useEffect(() => {
     const transformTasks = (tasksObj) => {
       const loadedTasks = [];
-
+	    // massage the API data
       for (const taskKey in tasksObj) {
         loadedTasks.push({ id: taskKey, text: tasksObj[taskKey].text });
       }
-
+      // change state to reflect changes in the UI
       setTasks(loadedTasks);
     };
 
@@ -720,11 +739,9 @@ export default NewTask;
 
 There's a tricky part here:
 
-What a heck is this? 🤔
-
 ```jsx
- // // NewTask.js
-
+ // NewTask.js
+ // What a heck is this? 🤔
  const enterTaskHandler = async (taskText) => {
      ...
      createTask.bind(null, taskText);👈❓
@@ -732,7 +749,7 @@ What a heck is this? 🤔
  } 
 ```
 
-Well, our `applyData` expects only one argument `data`:
+Well, our `applyData` callback function expects only one argument `data`:
 
 ```jsx
 // use-http.js
@@ -744,7 +761,7 @@ const sendRequest = useCallback(async (requestConfig, applyData) => {
 }
 ```
 
-and the same function, named `createTask` takes two arguments `taskText` and  `taskData`
+and the function `createTask` we pass as `applyData` takes two arguments `taskText` and  `taskData`
 
 ```jsx
 // NewTask.js
@@ -754,7 +771,7 @@ const createTask = (taskText, taskData) => { 👈 // expects 2 arguments
   };
 ```
 
-So we've got a problem: how we can possibly pass `taskText` to `applyData`??
+So we've got a problem: how we can possibly pass an extra argument `taskText` to `applyData`??
 
 The `.bind` method lets us pre-configure (not execute) the function, so it takes the extra parameter `taskText` we need.
 
@@ -773,6 +790,13 @@ To avoid the usage of this `bind()` method, the other option could be defining `
 
 ```jsx
 // NewTask.js
+import Section from '../UI/Section';
+import TaskForm from './TaskForm';
+import useHttp from '../../hooks/use-http';
+
+const NewTask = (props) => {
+
+ const { isLoading, error, sendRequest: sendTaskRequest } = useHttp();
 
  const enterTaskHandler = async (taskText) => {
 👉 const createTask = (taskData) => {
@@ -795,15 +819,17 @@ To avoid the usage of this `bind()` method, the other option could be defining `
       👉 createTask // this a function pointer
     );
   };
+return //some 
+JSX here
 ```
 
-We have now a solid 💪 foundational knowledge of how hooks 🪝work, so let's move on the next section, where we'll explore what happens with state inside hook.
+If you've read to this point, congratulations! You have now a solid 💪 foundational knowledge of how hooks 🪝work, so let's move on the next section, where we'll explore what happens with state inside hooks.
 
 There is an important question here:
 
-👉Is the state inside hooks share between the components that uses it ❓❓❓
+👉 Is the state inside hooks shared between the components that use it ❓❓❓🤔
 
-Let's find it out next! 
+Let's find out! 🤓
 
 ## Scope of state
 
