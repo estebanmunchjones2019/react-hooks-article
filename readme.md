@@ -203,6 +203,8 @@ const Widget = props => {
 export default Widget;
 ```
 
+Note: array destructuring is used to assign variables `apiData` and `setApiData`, so if you'r not familiar with it, check out this [MDN Doc](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)
+
 If we look at both components, we see a lot of duplication:
 
 ```jsx
@@ -830,9 +832,9 @@ There is an important question here:
 
 Let's find out! 🤓
 
-## Scope of state
+## Scope of state in hooks
 
-Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app (repo here ❌) that displays two counters and 2 buttons to increase it.
+Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app ([repo link here](https://github.com/estebanmunchjones2019/counter-app)) that displays two counters and 2 buttons to increase it.
 
 ```jsx
 // App.js
@@ -909,11 +911,46 @@ No!😯  the state is not shared, because each counter has different values 🤔
 
 When calling the built in `useState` or `useReducer` inside custom hooks, the state stored "inside the hook" is **different** for every component calling that hook, in other words, **scoped to the component** using it.
 
-That isn't very helpful if we want to have the a unique global state 🤔
+That isn't very helpful if we want to have a global state 🤔
 
-## How the store should work?
+## How should the global state manager code work?
 
-To overcome this issue of hooks having different states for each component using the hook, we're going to use functions pointers and an object defined outside the hook. Keep this in mind.
+To overcome this issue of hooks having different states for each component using the hook, we need something that remains the same every time the hook is being called by components. An variable declared outisde the hook with the `let` keyword looks  like a really good candidate! 
+
+Let's try to create a global counter, that any component on the app can update and read the most updated value 🤯
+
+something like this:
+
+````jsx
+// object pointer usage
+
+// globalStore constant is a pointer of that emtpy object
+let globalCounter = {}
+
+// let's name the custom hook useStore
+const useCounterStore = () = {
+  // we can use the globalStore constant + useState or useReducer hooks to share
+  // the same state across components!
+}
+````
+
+That is the first part of the puzzle solved. 
+
+The next step is to find a way to notify all the components that are using the hook and displayed on the screen. This part is becoming tricky...
+
+In other words, if we have component A and B using the `useStore` custom hook, when component A changes the state, component B should be notified that the state change, and be passed the new value.
+
+In order to do that, we need
+
+try to replicate counter but with global store
+
+components that use counterGlobal won't be re-rendered just for the fact that variable changes, but because we'll trigger a setState inside each interested component. 
+
+💡Remember, changes in props and state (including calls to setState) will trigger re-render in components.
+
+We need to do 2 things:
+
+1. Register the interested components: The first time an interested component calls the hook (when being mounted to the Virtual DOM), we need to add the setState function pointer to an array, called `listeners`. Each setState pointer is linked to the component that called the hook. That way, every time we call the useState functions referenced in the array, every component will re-render, and that way, they will be able to display the updated value of the global variable `globalCounter`.
 
 The requisites of the store are:
 
