@@ -905,7 +905,7 @@ If both components are using the same function `useCounter`, we would expect the
 
 No!😯  the state is not shared, because each counter has different values 🤔
 
-![](./images/counter.png)
+![](./images/counter-app.png)
 
 
 
@@ -914,6 +914,12 @@ When calling the built in `useState` or `useReducer` inside custom hooks, the st
 That isn't very helpful if we want to have a global state 🤔
 
 ## How should the global state manager code work?
+
+The requisites of the global state manager are:
+
+1) Provide the same state to components and pass them a function to update it.
+
+2) When one components updates the state, the rest of the interested components should get the updated value.
 
 To overcome this issue of hooks having different states for each component using the hook, we need something that remains the same every time the hook is being called by components. An variable declared outisde the hook with the `let` keyword looks  like a really good candidate! 
 
@@ -936,27 +942,120 @@ const useCounterStore = () = {
 
 That is the first part of the puzzle solved. 
 
-The next step is to find a way to notify all the components that are using the hook and displayed on the screen. This part is becoming tricky...
+The next step is to find a way to notify all the components that are using the hook and are displayed on the screen. This part is becoming tricky...
 
 In other words, if we have component A and B using the `useStore` custom hook, when component A changes the state, component B should be notified that the state change, and be passed the new value.
 
-In order to do that, we need
+Let's jump directly to the solution and then discuss how it works:
+````js
+// useCounterStore.js
 
-try to replicate counter but with global store
+import { useState, useEffect } from 'react';
 
-components that use counterGlobal won't be re-rendered just for the fact that variable changes, but because we'll trigger a setState inside each interested component. 
+// hardcoded value of the initial state
+let globalCounter = 0;
 
-💡Remember, changes in props and state (including calls to setState) will trigger re-render in components.
+// let's store the functions to update state for each interested component
+// this is an array of setCounter function pointers.
+let listeners = [];
 
-We need to do 2 things:
+const useCounterStore = () => {
 
-1. Register the interested components: The first time an interested component calls the hook (when being mounted to the Virtual DOM), we need to add the setState function pointer to an array, called `listeners`. Each setState pointer is linked to the component that called the hook. That way, every time we call the useState functions referenced in the array, every component will re-render, and that way, they will be able to display the updated value of the global variable `globalCounter`.
+    // we're not interested in using the counter state, just setCounter
+    const setCounter = useState(globalCounter)[1];
 
-The requisites of the store are:
+    // let's create a function that updates the global counter
+    const incrementCounter = () => {
+        // let's change the variable globalCounter defined outside the hook
+        globalCounter = globalCounter + 1;
 
-1) There is one state that components can access.
+        // let's call the function setCounter corresponding to each interested component
+        // so they re-render, and show the latest globalCounter value
+        for (const listener of listeners) {
+            listener(globalCounter);
+        }
+        
+    }
 
-2) When one components updates it, the rest should get the update value.
+    // let's register the components when they call this hook for the first time by
+    // pushing their corresponding setCounter function into the listeners array
+  useEffect(() => {
+    //when the component did mount, its corresponding setCounter function is added to the list, as a pointer, like all functions
+    listeners.push(setCounter);
+
+    //There's an unmounting clean up function (which is a closure), that de-registers the component from the listeners
+    return () => {
+      listeners = listeners.filter(li => li !== setCounter);
+    };
+  }, [setCounter]);
+
+
+  // let's return the global state and a way to update it
+  return [globalCounter, incrementCounter]
+
+   
+}
+
+export default useCounterStore;
+````
+
+```jsx
+// Counter1.js
+
+import useCounterStore from "../hooks/useCounterStore";
+
+function Counter1() {
+    const [globalCounter, incrementCounter] = useCounterStore();
+    return (
+        <>
+            <div>{globalCounter}</div>
+            <button onClick={incrementCounter}>
+                Increment counter
+            </button>
+        </>
+    );
+}
+
+export default Counter1;
+```
+
+Some notes about the code:
+
+- Components that use counterGlobal won't be re-rendered just for the fact that variable changes, but because we'll trigger a setCounter inside each interested component. 
+- Register the interested components: the first time an interested component calls the hook (when being mounted to the Virtual DOM), we need to add the `setCounter` function pointer to an array, called `listeners`. Each setCounter pointer is linked to the component that called the hook. That way, every time we call the useState functions referenced in the array, every component will re-render, and that way, they will be able to display the updated value of the global variable `globalCounter`.
+- Clean up function: that anonymous functions is a closure. What does that mean? setCounter function is kind of trapped inside the outer anonymous function, and can be referenced  in the clean up function if we hadn't a closure, it would be hard to know which setCounter to remove from the list, because that useEffect function is being called by multiple components.
+- `setCounter` is passed to the `useEffect` dependancy array because it's an external dependancy, and in this case, it's not gonna change every time the hooks runs, because it's a built in React function that is guaranteed by React to stay the same (be the same pointer). 
+- 💡Remember, changes in props and state (only through calls to a setState function, called setCounter in this example) will trigger re-render in components.
+
+The state is global now!
+
+![](./images/counter-app-global-state.png)
+
+KEEP WORKING HERE ❌
+
+Show a more global approach with dispatch and the set up file for the store
+
+Share link of counter global store app
+
+deploy the apps! and share links, so people can play with them
+
+share link of heart app like
+
+finally show the useReducer version of the hook
+
+Done!
+
+
+
+
+
+
+
+
+
+
+
+
 
 Without further a do, here is the magic formula. Don't worry if you don't understand it at first, we'll see each part in detail with explanations.
 
