@@ -361,7 +361,6 @@ import useApi from '../../useApi-hook/useApi';
 
 const Posts = props => {
     const apiData = 👉 useApi();
-
   const posts = apiData.slice(0,9).map(item => {   
     return <li>{item.title}</li> add body
 });
@@ -833,21 +832,88 @@ Let's find out! 🤓
 
 ## Scope of state
 
-The above hooks doesn't return a function that can update the state because the idea was that the components read the state but don't change it, but this case is not always what we want.
+Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app (repo here ❌) that displays two counters and 2 buttons to increase it.
 
-Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage state, let's build a simple app that displays a count and has a button to increment and decrement it, from 2 different components.
+```jsx
+// App.js
 
-useCounter example here.
+import Counter1 from './components/Counter1';
+import Counter2 from './components/Counter2';
 
-When calling the built in `useState` or `useReducer` inside custom hooks, the state stored inside the hook is **different** for every component calling that hook, in other words: **scoped to the component/custom hook** using it.
+function App() {
+  return (
+    <div className="App">
+      <header>
+        <h1>Counter app</h1>
+      </header>
+      <body>
+        <p>Counter1 component</p>
+        <Counter1/>
+        <p>Counter2 component</p>
+        <Counter2/>
+      </body>
+    </div>
+  );
+}
 
-That isn't very helpful if we want to have the same global scope and many parts of the app can change it.
+export default App;
+```
 
-When not to use a custom hook?
+```jsx
+// Counter1.js
 
-As a side note, custom hooks are not always required to abstract logic from components, as long as that logic doesn't involve any usage of built in hooks. That way, we could outsource the logic into a regular function, usually called helper functions, inside our code base.
+import useCounter from "../hooks/useCounter";
+
+function Counter1() {
+    const [counter, setCounter] = useCounter('Counter1');
+    return (
+        <>
+            <div>{counter}</div>
+            <button onClick={() => setCounter(counter + 1)}>
+                Increment counter
+            </button>
+        </>
+    );
+}
+
+export default Counter1;
+```
+
+```jsx
+// Counter2.js
+
+import useCounter from "../hooks/useCounter";
+
+function Counter2() {
+    const [counter, setCounter] = useCounter('Counter2');
+    return (
+        <>
+            <div>{counter}</div>
+            <button onClick={() => setCounter(counter + 1)}>
+                Increment counter
+            </button>
+        </>
+    );
+}
+
+export default Counter2;
+```
+
+If both components are using the same function `useCounter`, we would expect the `counter` state to be the same for both component, and when clicking any of the 2 buttons, we would see both counter to increment the values by one at the same time, but...
+
+No!😯  the state is not shared, because each counter has different values 🤔
+
+![](./images/counter.png)
+
+
+
+When calling the built in `useState` or `useReducer` inside custom hooks, the state stored "inside the hook" is **different** for every component calling that hook, in other words, **scoped to the component** using it.
+
+That isn't very helpful if we want to have the a unique global state 🤔
 
 ## How the store should work?
+
+To overcome this issue of hooks having different states for each component using the hook, we're going to use functions pointers and an object defined outside the hook. Keep this in mind.
 
 The requisites of the store are:
 
