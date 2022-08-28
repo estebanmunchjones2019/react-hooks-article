@@ -909,11 +909,15 @@ No!😯  the state is not shared, because each counter has different values 🤔
 
 
 
+Finished counter live app with hooks 👉 [here]() ❌
+
 When calling the built in `useState` or `useReducer` inside custom hooks, the state stored "inside the hook" is **different** for every component calling that hook, in other words, **scoped to the component** using it.
 
 That isn't very helpful if we want to have a global state 🤔
 
 ## How should the global state manager code work?
+
+Finished counter live app with global state 👉 [here]() ❌
 
 The requisites of the global state manager are:
 
@@ -1031,6 +1035,16 @@ The state is global now!
 
 ![](./images/counter-app-global-state.png)
 
+
+
+## A more reusable global state manager
+
+The solution to manage a global `count` state is really good, but what if we could have a hook that can be used to manage any kind of state, not only `counter` state, that uses a Redux like approach?
+
+By Redux like approach, I mean having actions and a reducer to update the state.
+
+
+
 KEEP WORKING HERE ❌
 
 Show a more global approach with dispatch and the set up file for the store
@@ -1041,9 +1055,13 @@ deploy the apps! and share links, so people can play with them
 
 share link of heart app like
 
+edit that app, specially comments!
+
 finally show the useReducer version of the hook
 
 Done!
+
+Next article: side effects!! (async code).
 
 
 
