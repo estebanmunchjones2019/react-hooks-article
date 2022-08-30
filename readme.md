@@ -1039,15 +1039,79 @@ The state is global now!
 
 ## A more reusable global state manager
 
-The solution to manage a global `count` state is really good, but what if we could have a hook that can be used to manage any kind of state, not only `counter` state, that uses a Redux like approach?
+The solution to manage a global `count` state is really good, but what if we could have a custom hook that can be used to manage any kind of state, not only `counter` state, that uses a Redux-like approach?
 
-By Redux like approach, I mean having actions and a reducer to update the state.
+The Redux approach is explained in [this documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), with great explanations of what `actions` and `reducers`are.
 
+Actions are objects with a `type` and a `payload`, that are dispatched (or fired) when certain things happen in the app (e.g add button clicked to add `Buy Milk` text to a list item) :
 
+```
+// Action example:
+
+const addTodoAction = {
+  type: 'todos/todoAdded',
+  payload: 'Buy milk'
+}
+```
+
+A **reducer** is a function that receives the current `state` and an `action` object, decides how to update the state if necessary, and returns the new state: `(state, action) => newState`. **You can think of a reducer as an event listener which handles events based on the received action (event) type.**
+
+````javascript
+// Reducer example
+
+const initialState = { todoList: [] }
+
+function counterReducer(state = initialState, action) {
+
+  // Check to see if the reducer cares about this action
+  // switch statements are commonly used instead of if checks
+  if (action.type === 'todos/todoAdded') {
+    // If so, make a copy of `state`
+    return {
+    // clone the state
+      ...state,
+     // clone the array + push the new item
+      todoList: [...todoList, action.payload]
+    }
+  }
+  // some more if checks here...
+  // otherwise return the existing state unchanged
+  return state
+}
+````
+
+what actions and reducers are in Redux, let's dive into the hooks code ,,,, ❌
+
+code here ❌
+
+The presented solution is little bit different that the classic `actions` and `reducers` approach, in the sense that the code that has the logic to update the state is inside an object with the key as the action type. In Redux land, the reducer is just a function with a switch statement that updates the state in a different way for each action type case, and then returns the state.
+
+Reading at the [Redux documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), the proposed solution with custom hooks shares this advantages with Redux:
+
+### 1.  Single Source of Truth: 
+
+> "The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
+>
+> This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application."
+>
+> that when any component dispatches an action, the state is changed, and then all the interested components are notified of the new state value, in a one way system."
+> 
+
+2. ### State is Read-Only
+
+> The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
+>
+> This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application.
+
+Actions are 
 
 KEEP WORKING HERE ❌
 
 Show a more global approach with dispatch and the set up file for the store
+
+Talk about immutability
+
+
 
 Share link of counter global store app
 
