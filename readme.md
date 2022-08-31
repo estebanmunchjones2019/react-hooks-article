@@ -1041,7 +1041,9 @@ The state is global now!
 
 The solution to manage a global `count` state is really good, but what if we could have a custom hook that can be used to manage any kind of state, not only `counter` state, that uses a Redux-like approach?
 
-The Redux approach is explained in [this documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), with great explanations of what `actions` and `reducers`are.
+The Redux approach is explained in detail on [this documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow).
+
+There are two main concepts in Redux land: `actions` and `reducers`.
 
 Actions are objects with a `type` and a `payload`, that are dispatched (or fired) when certain things happen in the app (e.g add button clicked to add `Buy Milk` text to a list item) :
 
@@ -1064,7 +1066,7 @@ const initialState = { todoList: [] }
 function counterReducer(state = initialState, action) {
 
   // Check to see if the reducer cares about this action
-  // switch statements are commonly used instead of if checks
+  // switch statements are commonly used instead of `if` checks
   if (action.type === 'todos/todoAdded') {
     // If so, make a copy of `state`
     return {
@@ -1080,46 +1082,270 @@ function counterReducer(state = initialState, action) {
 }
 ````
 
-what actions and reducers are in Redux, let's dive into the hooks code ,,,, ❌
+Without further a do, let's jump into the custom hook solution to manage global state like Redux 🚀
 
-code here ❌
+````js
+// /hooks-store/store.js
 
-The presented solution is little bit different that the classic `actions` and `reducers` approach, in the sense that the code that has the logic to update the state is inside an object with the key as the action type. In Redux land, the reducer is just a function with a switch statement that updates the state in a different way for each action type case, and then returns the state.
+import { useState, useEffect } from 'react';
+
+let globalState = {};
+
+let listeners = [];
+
+let actions = {};
+
+👇
+export const useStore = () => {
+  const setState = useState(globalState)[1];
+
+  const dispatch = (actionIdentifier, payload) => {
+    const newState = actions[actionIdentifier](globalState, payload);
+    globalState = { ...globalState, ...newState };
+
+    for (const listener of listeners) {
+      listener(globalState);
+    }
+  };
+
+  useEffect(() => {
+    listeners.push(setState);
+
+    return () => {
+      listeners = listeners.filter(li => li !== setState);
+    };
+  }, [setState]);
+
+  return [globalState, dispatch];
+};
+
+👇
+export const initStore = (userActions, initialState) => {
+  if (initialState) {
+    globalState = { ...globalState, ...initialState };
+  }
+  actions = { ...actions, ...userActions };
+};
+````
+
+Two functions are exported above:
+
+- `useStore`: this useStore hook will be called in the the files of the interested components
+- `initStore`: called in special JS files (e.g pwhere the initial state for each state slice and actions are set up from individual so the state con hold multiple slices of data e.g: globalState= { products: someData, orders: someData}  and so on.
+
+````javascript
+// /hooks-store/products-store.js
+
+👇
+import { initStore } from './store';
+
+const configureStore = () => {
+  const actions = {
+    TOGGLE_FAV: (curState, productId) => {
+      const prodIndex = curState.products.findIndex(p => p.id === productId);
+      const newFavStatus = !curState.products[prodIndex].isFavorite;
+      const updatedProducts = [...curState.products];
+      updatedProducts[prodIndex] = {
+        ...curState.products[prodIndex],
+        isFavorite: newFavStatus
+      };
+      return { products: updatedProducts };
+    }
+  };
+  
+  👇
+  initStore(actions, {
+    products: [
+      {
+        id: 'p1',
+        title: 'Red Scarf',
+        description: 'A pretty red scarf.',
+        isFavorite: false
+      },
+      {
+        id: 'p2',
+        title: 'Blue T-Shirt',
+        description: 'A pretty blue t-shirt.',
+        isFavorite: false
+      },
+      {
+        id: 'p3',
+        title: 'Green Trousers',
+        description: 'A pair of lightly green trousers.',
+        isFavorite: false
+      },
+      {
+        id: 'p4',
+        title: 'Orange Hat',
+        description: 'Street style! An orange hat.',
+        isFavorite: false
+      }
+    ]
+  });
+};
+
+👇
+export default configureStore;
+````
+
+Some notes of the above code:
+
+- the `actions` `object` is just an object with keys that are the identifiers, and then, the key value is a function that takes state and a payload, and returns the new state. It's a **hybrid of a Redux action and reducer**
+
+- The `initStore` function is called when the `configureStore` function is called in another JS file (e.g `index.js`, and that will change add the actions and initial state of the `products` slice.
+
+  
+
+Let's see where `configureStore` is called:
+
+````js
+// index.js
+
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { BrowserRouter } from 'react-router-dom';
+
+import './index.css';
+import App from './App';
+
+👇
+import configureProductsStore from './hooks-store/products-store';
+
+👇
+configureProductsStore();
+
+ReactDOM.render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>,
+  document.getElementById('root')
+);
+
+````
+
+Some notes:
+
+- In `Index.js` we can configure other slices of the store, like `orders` , `payments` etc, by first setting up config files like `/hooks-store/products-store.js` but named differently, like `/hooks-store/orders-store.js`, and then calling them here, e.g `configureOrdersStore`, etc.
+
+The `useStore` hook can be used inside components to read and update the data slices:
+
+````js
+// /containers/products.js
+
+import ProductItem from '../components/Products/ProductItem';
+import { useStore } from '../hooks-store/store';
+import './Products.css';
+
+const Products = props => {
+  
+  // we're just interested in reading the state, not dispatching and action
+  👇
+  const state = useStore()[0];
+  return (
+    <ul className="products-list">
+        👇
+      {state.products.map(prod => (
+        <ProductItem
+          key={prod.id}
+          id={prod.id}
+          title={prod.title}
+          description={prod.description}
+          isFav={prod.isFavorite}
+        />
+      ))}
+    </ul>
+  );
+};
+
+export default Products;
+
+````
+
+````js
+import React from 'react';
+
+import Card from '../UI/Card';
+import { useStore } from '../../hooks-store/store';
+import './ProductItem.css';
+
+const ProductItem = props => {
+
+  // we're just interested in dispatching and action, not in reading the state 
+  👇
+  const dispatch = useStore()[1];
+
+  const toggleFavHandler = () => {
+    // toggleFav(props.id);
+    👇
+    dispatch('TOGGLE_FAV', props.id);
+  };
+
+  return (
+    <Card style={{ marginBottom: '1rem' }}>
+      <div className="product-item">
+        <h2 className={props.isFav ? 'is-fav' : ''}>{props.title}</h2>
+        <p>{props.description}</p>
+        <button
+          className={!props.isFav ? 'button-outline' : ''}
+          onClick={toggleFavHandler}
+        >
+          {props.isFav ? 'Un-Favorite' : 'Favorite'}
+        </button>
+      </div>
+    </Card>
+  );
+};
+
+export default ProductItem;
+
+````
+
+
+
+## Advantages of the custom hook solution:
 
 Reading at the [Redux documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), the proposed solution with custom hooks shares this advantages with Redux:
 
 ### 1.  Single Source of Truth: 
 
-> "The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
->
-> This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application."
->
-> that when any component dispatches an action, the state is changed, and then all the interested components are notified of the new state value, in a one way system."
-> 
+"The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
+
+This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application."
+
+That way, when any component dispatches an action, the state is changed, and then all the interested components are notified of the new state value, in a one way system."
+
 
 2. ### State is Read-Only
 
-> The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
->
-> This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application.
+"The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
 
-Actions are 
+This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application."
+
+### 
+
+And this is an advantage over Redux:
+
+1. ### Lightweight
+
+   There's no dependancy on a library, we'r just using built in React features.
+
+One disadvantage over Redux:
+
+1. ### Debugging experience
+
+   No Redux debugging tools through the [Redux Devtools extension]((https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en))  can be used in the browser to debug state.
+
+
 
 KEEP WORKING HERE ❌
 
-Show a more global approach with dispatch and the set up file for the store
+Doing async taks in the reducer?
 
-Talk about immutability
-
-
+Maybe explain no cloning = no component re-render?
 
 Share link of counter global store app
 
 deploy the apps! and share links, so people can play with them
-
-share link of heart app like
-
-edit that app, specially comments!
 
 finally show the useReducer version of the hook
 
