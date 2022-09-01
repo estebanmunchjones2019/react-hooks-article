@@ -1,4 +1,4 @@
-# State management with React custom hooks
+# Global state management with React hooks
 
 Learn how to use React custom hooks 🪝to manage global state across the app **without** the need of  the`Context API` or libraries like Redux or MobX 🤯.
 
@@ -1302,6 +1302,42 @@ export default ProductItem;
 
 
 
+## Performing async task before updating the state
+
+So far, so good. Our custom hook solution works like a charmm, but what if we want to perform async tasks before/after updating the state?
+
+We can make use of the async await features, like this:
+
+⚠️ The following code snippets haven't been thoroughly tested, possible gun foots ahead! ⚠️
+
+Keep working here ❌ polish the async example, maybe add a property of `touched` to the product data., and connect to analytics adding that product to a cloud storage, something crazy.
+
+````javascript
+
+````
+
+````javascript
+
+````
+
+A nice way to test this async functionality:
+
+1.  Run the above code locally
+
+2. Open your browser dev tools
+
+3. Click the `Favourite` button
+
+4. There should be a log in the console: `'start of http call to POST some data'`
+
+5. The button should remain with the text `Favourite`
+
+6. After 4 seconds, there should be a log in the console: `'data successfuly posted!'`
+
+7. The button should get a new text `Un-Favorite`
+
+   
+
 ## Advantages of the custom hook solution:
 
 Reading at the [Redux documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), the proposed solution with custom hooks shares this advantages with Redux:
@@ -1321,13 +1357,15 @@ That way, when any component dispatches an action, the state is changed, and the
 
 This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application."
 
-### 
-
 And this is an advantage over Redux:
 
 1. ### Lightweight
 
    There's no dependancy on a library, we'r just using built in React features.
+
+2. ### Out of the box Async taks handling 
+
+   Make API calls and other async taks out of the box, plus call dispatch more actions inside actions
 
 One disadvantage over Redux:
 
@@ -1335,11 +1373,17 @@ One disadvantage over Redux:
 
    No Redux debugging tools through the [Redux Devtools extension]((https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en))  can be used in the browser to debug state.
 
+   
+
+   
+
+## Same solution but with useReducer 🤯
 
 
-KEEP WORKING HERE ❌
 
-Doing async taks in the reducer?
+Let's use useReducer! Version
+
+add src to all paths?check them in the repo
 
 Maybe explain no cloning = no component re-render?
 
