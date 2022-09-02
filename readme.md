@@ -1308,9 +1308,19 @@ So far, so good. Our custom hook solution works like a charmm, but what if we wa
 
 We can make use of the async await features, like this:
 
-⚠️ The following code snippets haven't been thoroughly tested, possible gun foots ahead! ⚠️
+If you'r gonna use the following snippets in production code, make sure you test it thoroughly, because it's a beta hook. 
 
 Keep working here ❌ polish the async example, maybe add a property of `touched` to the product data., and connect to analytics adding that product to a cloud storage, something crazy.
+
+Try to set the SET_ANALYTICS_TOUCHED\add if statement to actions in the hook.
+
+POST_TO_ANALYTICS
+
+SET_TOUCHED
+
+Explain if checks in store, to allow not having all the keys required for actions and sideEffects
+
+alternatively, if checks can be avoided and all the keys need to be added (having actions that don't affect state, or sideEffects with return;)
 
 ````javascript
 
