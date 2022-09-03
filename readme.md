@@ -1304,49 +1304,202 @@ export default ProductItem;
 
 ## Performing async task before updating the state
 
-So far, so good. Our custom hook solution works like a charmm, but what if we want to perform async tasks before/after updating the state?
+So far, so good. Our custom hook solution works like a charm, but what if we want to perform async tasks before/after updating the state?
 
-We can make use of the async await features, like this:
+That async task could be a GET or POST request, and depending on the result, dispatch or not action, or just dispatching an action with fresh data from that API.
 
-If you'r gonna use the following snippets in production code, make sure you test it thoroughly, because it's a beta hook. 
+For this solution, let's make use of the async await features, that make the JavaScript code so nice to read.
 
-Keep working here ❌ polish the async example, maybe add a property of `touched` to the product data., and connect to analytics adding that product to a cloud storage, something crazy.
-
-Try to set the SET_ANALYTICS_TOUCHED\add if statement to actions in the hook.
-
-POST_TO_ANALYTICS
-
-SET_TOUCHED
-
-Explain if checks in store, to allow not having all the keys required for actions and sideEffects
-
-alternatively, if checks can be avoided and all the keys need to be added (having actions that don't affect state, or sideEffects with return;)
+Heads up! If you'r gonna use the following snippets in production code, make sure you test it thoroughly, because it's an experimental hook 🧪.
 
 ````javascript
+// /src/hooks-store/store.js
+
+import { useState, useEffect } from 'react';
+
+let globalState = {};
+
+let listeners = [];
+
+let actions = {};
+👇
+let sideEffects = {};
+
+export const useStore = () => {
+  const setState = useState(globalState)[1];
+
+  const dispatch = 👉 async (actionIdentifier, payload) => {
+    👇
+    if (sideEffects[actionIdentifier]) {
+      await sideEffects[actionIdentifier](globalState, dispatch, payload);
+    }
+    👇
+    const newState = actions[actionIdentifier] ? 
+      actions[actionIdentifier](globalState, dispatch, payload) : 
+   	  { ...globalState 				};
+  
+    globalState = { ...globalState, ...newState };
+
+    console.log(`after running action: ${actionIdentifier} action for ${payload} product`,  'the updated globalState is: ', 				globalState );
+
+    for (const listener of listeners) {
+      listener(globalState)
+    }
+  };
+
+  useEffect(() => {
+    listeners.push(setState);
+
+    return () => {
+      listeners = listeners.filter(li => li !== setState);
+    };
+  }, [setState]);
+
+  return [globalState, dispatch];
+};
+
+export const initStore = (userActions, 👉 userSideEffects, initialState) => {
+  if (initialState) {
+    globalState = { ...globalState, ...initialState };
+  }
+  actions = { ...actions, ...userActions };
+  👇
+  sideEffects = { ...sideEffects, ...userSideEffects}
+};
 
 ````
 
 ````javascript
+import { initStore } from './store';
 
+👇
+// fake async task that takes 4 seconds to resolve
+const fakePostRequest = (payload) => {
+  console.log(`Posting : ${payload.productId} to analytics as favouriteL ${payload.newFavStatus}`);
+  // this fakes sending the value of productId & newFavStatus to an analytics service everytime the button is clicked
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+        console.log(`${payload.productId} successfully posted to analytics!`)
+        resolve();
+    }, 4000);
+  });
+}
+
+const configureStore = () => {
+  const actions = {
+    TOGGLE_FAV: (curState, dispatch, productId) => {
+      const prodIndex = curState.products.findIndex(p => p.id === productId);
+      const newFavStatus = !curState.products[prodIndex].isFavorite;
+      const updatedProducts = [...curState.products];
+      updatedProducts[prodIndex] = {
+        ...curState.products[prodIndex],
+        isFavorite: newFavStatus
+      };
+			👇
+      dispatch('POST_TO_ANALYTICS', { productId, newFavStatus });
+
+      return { products: updatedProducts };
+    },
+    👇
+    SET_TIMES_CLICKED: (curState, dispatch, productId) => {
+      const prodIndex = curState.products.findIndex(p => p.id === productId);
+      const updatedProducts = [...curState.products];
+      updatedProducts[prodIndex] = {
+        ...curState.products[prodIndex],
+        timesClicked: curState.products[prodIndex].timesClicked + 1
+      };
+
+      return { products: updatedProducts };
+    }
+  };
+	👇
+  const sideEffects = {
+   POST_TO_ANALYTICS: async (curState, dispatch, payload) => {
+        console.log(`POST_TO_ANALYTICS sideEffect is running for product ${payload} `, 'globalState is: ', curState,'payload is :', payload);
+        try {
+          // fake call to post data to an Data analytics API
+          // this is just an example, you might not do this in real life analytics
+          await fakePostRequest(payload);
+          dispatch('SET_TIMES_CLICKED', payload.productId);
+        } catch(error) {
+          // analytics post failed, let's not dispatch the action to mark it as clicked
+          return;
+        }
+    }
+  }
+
+  initStore(actions, 👉 sideEffects, {
+    products: [
+      {
+        id: 'p1',
+        title: 'Red Scarf',
+        description: 'A pretty red scarf.',
+        isFavorite: false,
+        👇
+        timesClicked: 0
+      },
+      {
+        id: 'p2',
+        title: 'Blue T-Shirt',
+        description: 'A pretty blue t-shirt.',
+        isFavorite: false,
+        timesClicked: 0
+      },
+      {
+        id: 'p3',
+        title: 'Green Trousers',
+        description: 'A pair of lightly green trousers.',
+        isFavorite: false,
+        timesClicked: 0
+      },
+      {
+        id: 'p4',
+        title: 'Orange Hat',
+        description: 'Street style! An orange hat.',
+        isFavorite: false,
+        timesClicked: 0
+      }
+    ],
+  });
+};
+
+export default configureStore;
 ````
 
-A nice way to test this async functionality:
+Some notes about this solution:
 
-1.  Run the above code locally
+1. In `/src/hooks-store/store.js`:a
 
-2. Open your browser dev tools
+- An `if` check and a `ternary expression` have been added inside the `dispatch` function body, in case some `actions` or `sideEffect` functions are not defined for a specific `actionIdentifier`
 
-3. Click the `Favourite` button
+2. In `/src/hooks-store/products-store.js`:
 
-4. There should be a log in the console: `'start of http call to POST some data'`
+- `sideEffects` functions don't change state, they just run before actions,  they do async tasks (like posting data, geting data from endpoints, etc) and they then dispatch another action with some fresh data (if needed), or they could even not dispatch an action at all.
+- `actions` functions can also dispatch other actions. This is a difference with how Redux 
 
-5. The button should remain with the text `Favourite`
+The expected beahaviour when a user toggles the `Favourite` button is the following:
 
-6. After 4 seconds, there should be a log in the console: `'data successfuly posted!'`
+1.  The `Favourite` button is clicked
 
-7. The button should get a new text `Un-Favorite`
+2.  `TOGGLE_FAV` action is dispatched
 
-   
+3.  The `isFavorite` boolean property of the product is toggled `true`.
+
+4.  `POST_TO_ANALYTICS` action is dispatched, holding the new `isFavourite` boolean value.
+
+5.  The button text changes to `Un-favorite`.
+
+6.  The post request to analytics starts, with a request body holding the `productId` and  `isFavourite` values.
+
+7.  After 4 seconds, the analytics server responds successfully.
+
+8.  `SET_TIMES_CLICKED` action is displayed, just passing the `productId` as payload
+
+9.  The property `timesClicked` of the product is incremented by 1.
+
+So, to recap, the timesClicked propery is updated only if data has been successfuly posted to an analytics server.
+
+Feel free to start smashing the `Favourite` buttons and check the log messages in the console log, it's really fun 🤓
 
 ## Advantages of the custom hook solution:
 
