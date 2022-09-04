@@ -1026,10 +1026,32 @@ export default Counter1;
 Some notes about the code:
 
 - Components that use counterGlobal won't be re-rendered just for the fact that variable changes, but because we'll trigger a setCounter inside each interested component. 
+
 - Register the interested components: the first time an interested component calls the hook (when being mounted to the Virtual DOM), we need to add the `setCounter` function pointer to an array, called `listeners`. Each setCounter pointer is linked to the component that called the hook. That way, every time we call the useState functions referenced in the array, every component will re-render, and that way, they will be able to display the updated value of the global variable `globalCounter`.
+
+- An important note about the `listeners` array. is that the first `setCounter` function there corresponds the most parent component in the app that uses that hook, then we have the children's functions, grandchildren, and so on. That way, we ensure that when there's a change of state, the first to component to know about it is the most parent component, and not the children. If we hadn't this specific order in `listeners` we could have this error on the console:
+  ```
+   Warning: Cannot update a component (`ProductItem`) while rendering a different component (`ProductItem`). To locate the bad setState() call inside `ProductItem`, follow the stack trace as described in https://fb.me/setstate-in-render
+      in ProductItem (at Products.js:15)
+      in ul (at Products.js:13)
+      in Products (created by Context.Consumer)
+      in Route (at App.js:13)
+      in main (at App.js:12)
+      in App (at src/index.js:14)
+      in Router (created by BrowserRouter)
+      in BrowserRouter (at src/index.js:13)
+  
+      the difference with using state is that dispatch function wasn't triggering a re-render of this component first
+      because we were calling the setStates as they were stored in the list (from parents to children).
+  ```
+
 - Clean up function: that anonymous functions is a closure. What does that mean? setCounter function is kind of trapped inside the outer anonymous function, and can be referenced  in the clean up function if we hadn't a closure, it would be hard to know which setCounter to remove from the list, because that useEffect function is being called by multiple components.
+
 - `setCounter` is passed to the `useEffect` dependancy array because it's an external dependancy, and in this case, it's not gonna change every time the hooks runs, because it's a built in React function that is guaranteed by React to stay the same (be the same pointer). 
+
 - 💡Remember, changes in props and state (only through calls to a setState function, called setCounter in this example) will trigger re-render in components.
+
+  
 
 The state is global now!
 
@@ -1312,6 +1334,8 @@ For this solution, let's make use of the async await features, that make the Jav
 
 Heads up! If you'r gonna use the following snippets in production code, make sure you test it thoroughly, because it's an experimental hook 🧪.
 
+If you find the next pieces of code buggy, please submit a PR so we can improve it! 🚀
+
 ````javascript
 // /src/hooks-store/store.js
 
@@ -1501,11 +1525,13 @@ So, to recap, the timesClicked propery is updated only if data has been successf
 
 Feel free to start smashing the `Favourite` buttons and check the log messages in the console log, it's really fun 🤓
 
-## Advantages of the custom hook solution:
+## Pros and cons of the custom hook solution:
 
-Reading at the [Redux documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), the proposed solution with custom hooks shares this advantages with Redux:
+### Advantages:
 
-### 1.  Single Source of Truth: 
+Reading at the [Redux documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), the proposed solution with custom hooks shares these advantages with Redux:
+
+#### 1.  Single Source of Truth: 
 
 "The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
 
@@ -1514,25 +1540,27 @@ This makes it easier to debug and inspect your app's state as things change, as 
 That way, when any component dispatches an action, the state is changed, and then all the interested components are notified of the new state value, in a one way system."
 
 
-2. ### State is Read-Only
+2. #### State is Read-Only
 
 "The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
 
 This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application."
 
-And this is an advantage over Redux:
+And this is an **advantage** over Redux:
 
-1. ### Lightweight
+1. #### Lightweight
 
    There's no dependancy on a library, we'r just using built in React features.
 
-2. ### Out of the box Async taks handling 
+2. #### Out of the box Async taks handling 
 
    Make API calls and other async taks out of the box, plus call dispatch more actions inside actions
 
+### Disadvantages:
+
 One disadvantage over Redux:
 
-1. ### Debugging experience
+1. #### Debugging experience
 
    No Redux debugging tools through the [Redux Devtools extension]((https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en))  can be used in the browser to debug state.
 
@@ -1540,25 +1568,20 @@ One disadvantage over Redux:
 
    
 
-## Same solution but with useReducer 🤯
+## Conclusion
+
+If you have reached this point, massive congrats!🎉
+
+It's no enough to read blogposts to get good at React hooks and state management, you need to spend time on your keyboard building apps, so I encourage you to do that 🤓
+
+And from now on, you can use this global state management solution in your side projects,  if you want to avoid using a statement solution libray or React Context.
+
+Happy coding! 💻
 
 
-
-Let's use useReducer! Version
-
-add src to all paths?check them in the repo
-
-Maybe explain no cloning = no component re-render?
-
-Share link of counter global store app
 
 deploy the apps! and share links, so people can play with them
 
-finally show the useReducer version of the hook
-
-Done!
-
-Next article: side effects!! (async code).
 
 
 
@@ -1572,56 +1595,8 @@ Next article: side effects!! (async code).
 
 
 
-Without further a do, here is the magic formula. Don't worry if you don't understand it at first, we'll see each part in detail with explanations.
 
-Explain each part of the hook step by step, pointing out that the useState and useEffect run at the same as if they were part of the component that called the hook.
 
-We could abstract the API call into a custom hook:
 
-Explain here the construction of the custom hook step by step
 
-The hook will run the useEffect code at the same time the component would do, and the variable got from the useApi() call behaves like a normal variable returned from calling useState(), that's the magic of hooks: reusable code and slimmer components!🎉
 
-Now that you undertand that the built in hooks useState and useEffect behave the same way as they were in the component that called the hook, you're ready for the next step: build the custom hook for the demo app!
-
-## JS objects, the key
-
-functions are objects in JS, and they were stored on the listeners array!
-
-Bonus Pro tip when using useEffect: avoiding hooks hell.
-
-Opinion on React and re-renders has the problem of functions, that they're new objects and that affects effects. Other framworks are more straight forward regarding triggering effects. 
-
-The usage of useCallback to guarantee having a same object on successive re-renders is convoluted.
-
-useMemo can be used to have the same object on re-renders
-
-Solution: use as little external dependancies inside useEffects.
-
-# See Max videos about custom hooks and the store.
-
-(check React version of Max code).
-
-things to explain:
-
-1. usage of built in and custom hooks inside it
-
-2. the return variables, usage of the array for more than one variable, (anything can be return in a function, right?).
-
-3. the parameter pass to it to configure it (initial state, conditionals, etc)
-
-4. Explain that with built in hooks, we're already passing arguments useState(0), useEffect(()=> someCodeHere, []);
-
-5. add parameters to the dependacy useEffect array.
-
-6. setting state inside the custom hook will trigger a re-render of the component that uses the hooks, because is the same as triggerin useState directly inside the component.
-
-7. a function that is passed as useEffect dependancy array can cause infinite loops, as when the component re-renders, the pointer of that function is a new one (even though the functions looks the same in content). Solution use useCallback so the function is the same object on re-renders.
-
-8. So, to call the api and prevent infinite calls of the useEffect (and not leaving the dependancy array empty) a function used there fetchData had to be pass there, so that function had to be wrapped around a useCallback hook, and as the useCallback dependancy array needed to be passed the dependancies, it was too complex to also wrap those dependancies in useCallback (for functions) and useMemo(for the http config object).
-
-9. when passing fetch tasks as parameter to the custom hook, a pointer of the function is passed to it. Objects are copied by pointers.
-
-10. Parameters of useCallback callback function are not considered to be included on the dependancy array, only external things that are not react functions (React guarantees that).
-
-11. Mindblowing: pre-configuring functions with the .bind() method, to pass some extra argument when calling it, even though the code that exectutes is expecting fewer arguments.
