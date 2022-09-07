@@ -2,55 +2,50 @@
 
 Learn how to use React custom hooks 🪝to manage global state across the app **without** the need of  the`Context API` or libraries like Redux or MobX 🤯.
 
-This is not a boring theory tutorial, it's a hands on one 💪, so we're gonna build this demo app: demo-app-link.
+This is not a boring theory tutorial, it's a hands on one 💪, so we're gonna build this [demo app](https://replace-redux-with-custom-hook.web.app/) that uses a custom hook solution to manage global state and performs side effects (async tasks) when updating the state 🚀
 
-This is the gitHub repo with all the code: code-repo-url
+This is the [gitHub repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) with the code for:
+
+- [master](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) branch: custom hook solution without side effects
+- [async](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook/tree/async) branch: custom hook solution with side effects
 
 The content of this tutorial is based on this course: [React 16: The Complete Course (incl. React Router 4 &amp; Redux) | Udemy](https://www.udemy.com/course/react-the-complete-guide-incl-redux/?couponCode=D_0322)
 
-👉 Big thanks to Gonzalo Aguirre [@_gonaguirre_](https://twitter.com/_gonaguirre), from Underscope ([Underscope - We deliver world-class mobile apps using React Native](https://underscope.io/)), a React Native company based in South America, for reviewing this tutorial.
+👉 Big thanks to the reviewers:
+
+- Gonzalo Aguirre [@_gonaguirre_](https://twitter.com/_gonaguirre), from Underscope ([Underscope - We deliver world-class mobile apps using React Native](https://underscope.io/)), a React Native company based in South America
+- Fabiha Kathun
 
 Table of contents:
 
 **Intro**:
 
-- What is global state?
+- [What is global state?](#what-is-global-state?)
 
-- Is Context API the solution?
+- [Is Context API the solution to manage it?](#is-context-api-the-solution-to-manage-it?)
+- [State management solution libraries](#state-management-solution-libraries)
 
-- What are hooks?
+**Get up to speed with hooks**:
 
-**Understanding custom hooks**:
+- [What are hooks?](#what-are-hooks?)
 
-- Let's build our first hook
+- [Spotting duplicated code](spotting-duplicated-code)
 
-- A more advanced hook
+- [First custom hook example](#first-custom-hook-example)
+  
+- [A more complex hook example](#a-more-complex-hook-example)
+- [Scope of state in hooks](#scope-of-state-in-hooks)
 
-- Scope of state
+**Building a global store**
 
-**Building a basic global store**
+- [Global state management requirements](global-state-management-requirements)
+- [Global counter example](global-counter-example)
+- [Final global state management solution](final-global-state-management-solution)
+- [Final state management solution with side effects](final-state-management-solution-with-side-effects)
 
-- how the store should work?rules
+- [Pros and cons of the custom hook solution with side effects](pros-and-cons-of-the-custom-hook-solution-with-side-effects)
 
-- Storing function pointers
-
-- Notifying subscribed components
-
-- Version with `useState`
-
-- Version with `useReducer`.
-
-**Improving the stores**
-
-- Separating reusable code
-
-**Bonus**
-
-- Why not to use the Context API for state managment (explain memo is not for free, slow API).
-
-- Asynchronous code (mimic Redux thunk).?
-
-- Keep an eye on Recoil
+- [Conclusion](conclusion)
 
 ## What is global state?
 
@@ -66,7 +61,7 @@ But hang on, what is prop drilling? Is when the same prop is passed through a lo
 
 Prop drilling chart here ❌
 
-### Is Context API the solution?
+## Is Context API the solution to manage it?
 
 There's a solution that is widely adopted in the React community to fix the propr drilling issue, and is the usage of the built in `Context API`, but it presents these 2 downsides:
 
@@ -116,21 +111,18 @@ There are:
 - **Custom hooks** that we can use in components and other custom hooks, and they're helpful to move stateful logic/side effects outisde functional components so it can be re-used and at the same time, make the components leaner.
 
 There are certain rules when using these hooks:
-![](./images/rules-of-hooks-01.jpg)
-
-
-![](./images/rules-of-hooks-02.jpg)
+![](./images/rules-of-hooks-01.jpg)![](./images/rules-of-hooks-02.jpg)
 
 In the coming sections, we'll take a look at 2 custom hooks to understand them in depth, all with code examples and repos.
 
-## Let's build our first custom hook
+## Spotting duplicated code
 
 What if we have two components, `Posts.js` and `Widget.js`, that need to show a list of posts from an API with different markup and amount of posts?
 
 Post.js only displays the first 10 posts from the API.
 
 ```jsx
-// Posts.js
+// src/Posts.js
 
 import { useEffect, useState } from "react";
 import React from 'react';
@@ -168,7 +160,7 @@ export default Posts;
 And Widget.js displays just the first 3 posts from the list:
 
 ```jsx
-// Widget.js
+// src/Widget.js
 
 import { useEffect, useState } from "react";
 import React from 'react';
@@ -266,10 +258,14 @@ Custom hooks can have any built in hooks inside it, like `useEffect` and `useSta
 
 It can take you some time around to wrap your head around this idea 🥴, but over time it will become natural 😌.
 
+
+
+## First custom hook example
+
 Here is the custom hook called `useApi` that will solve our code duplication problem:
 
 ```jsx
-// useApi.js
+// src/hooks/useApi.js
 
 // import built in React hooks
 import { useEffect, useState } from "react";
@@ -347,11 +343,6 @@ Here is the code explained step by step:
    }
    ````
    
-   
-   
-   
-
-### Let's consume the custom hook
 
 Now that our `useApi` custom hook is ready, let's use it inside our components!
 
@@ -836,8 +827,29 @@ Let's find out! 🤓
 
 Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app ([repo link here](https://github.com/estebanmunchjones2019/counter-app)) that displays two counters and 2 buttons to increase it.
 
+````jsx
+// src/hooks/useCounter.js
+
+import { useState } from 'react';
+
+const useCounter = (componentName) => {
+
+    // let's log the component that is calling this hook
+    console.log('useCounter hook function running because' + componentName + ' is calling it');
+
+    // all components using the hooks will have counter with value 0 as initial state
+    const [counter, setCounter] = useState(0);
+
+    return [counter,setCounter];
+}
+
+export default useCounter;
+````
+
+
+
 ```jsx
-// App.js
+// src/App.js
 
 import Counter1 from './components/Counter1';
 import Counter2 from './components/Counter2';
@@ -862,7 +874,7 @@ export default App;
 ```
 
 ```jsx
-// Counter1.js
+// src/Counter1.js
 
 import useCounter from "../hooks/useCounter";
 
@@ -882,7 +894,7 @@ export default Counter1;
 ```
 
 ```jsx
-// Counter2.js
+// src/Counter2.js
 
 import useCounter from "../hooks/useCounter";
 
@@ -901,25 +913,23 @@ function Counter2() {
 export default Counter2;
 ```
 
-If both components are using the same function `useCounter`, we would expect the `counter` state to be the same for both component, and when clicking any of the 2 buttons, we would see both counter to increment the values by one at the same time, but...
+
+
+If both components are using the same function `useCounter`, we would expect the `counter` state to be the same for both components, and when clicking any of the 2 buttons, we would see both counters to increment the values by one at the same time, but...
 
 No!😯  the state is not shared, because each counter has different values 🤔
 
 ![](./images/counter-app.png)
 
-
-
-Finished counter live app with hooks 👉 [here]() ❌
-
 When calling the built in `useState` or `useReducer` inside custom hooks, the state stored "inside the hook" is **different** for every component calling that hook, in other words, **scoped to the component** using it.
 
-That isn't very helpful if we want to have a global state 🤔
+That isn't very helpful if we want to have a global state, isn't it? 🤔
 
-## How should the global state manager code work?
+## Global state management requirements
 
-Finished counter live app with global state 👉 [here]() ❌
+We have now finished understanding how hooks work, including how state is individual for each component using a custom hook.
 
-The requisites of the global state manager are:
+Let's first think about what things the global state management solution should do for us:
 
 1) Provide the same state to components and pass them a function to update it.
 
@@ -927,36 +937,38 @@ The requisites of the global state manager are:
 
 To overcome this issue of hooks having different states for each component using the hook, we need something that remains the same every time the hook is being called by components. An variable declared outisde the hook with the `let` keyword looks  like a really good candidate! 
 
-Let's try to create a global counter, that any component on the app can update and read the most updated value 🤯
+## Global counter example
 
-something like this:
+Let's try to create a global counter ([repo link here](https://github.com/estebanmunchjones2019/counter-app-global-state)) that any component on the app can update and read the most updated value 🤯
+
+The structure of the hook should be something like this
 
 ````jsx
 // object pointer usage
 
-// globalStore constant is a pointer of that emtpy object
+// globalStore variable should be a pointer of an emtpy object
 let globalCounter = {}
 
 // let's name the custom hook useStore
 const useCounterStore = () = {
-  // we can use the globalStore constant + useState or useReducer hooks to share
+  // we can use the globalStore variable + useState hooks to share
   // the same state across components!
 }
 ````
 
-That is the first part of the puzzle solved. 
+Having a variable defined outside the hook, that can be updated, is the first part of the puzzle solved. 
 
-The next step is to find a way to notify all the components that are using the hook and are displayed on the screen. This part is becoming tricky...
+The next step is to find a way to notify of the variable value changes to all the components that are using the hook and are displayed on the screen. This part is becoming tricky...🤔
 
-In other words, if we have component A and B using the `useStore` custom hook, when component A changes the state, component B should be notified that the state change, and be passed the new value.
+In other words, if we have component A and B using the `useStore` custom hook, when component A changes the state (mutating the variable), component B should be notified that the state changed, and then be passed the new value.
 
 Let's jump directly to the solution and then discuss how it works:
 ````js
-// useCounterStore.js
+// src/useCounterStore.js
 
 import { useState, useEffect } from 'react';
 
-// hardcoded value of the initial state
+// hardcoded value for the initial state
 let globalCounter = 0;
 
 // let's store the functions to update state for each interested component
@@ -1004,7 +1016,7 @@ export default useCounterStore;
 ````
 
 ```jsx
-// Counter1.js
+// src/Counter1.js
 
 import useCounterStore from "../hooks/useCounterStore";
 
@@ -1059,7 +1071,7 @@ The state is global now!
 
 
 
-## A more reusable global state manager
+## Final global state management solution
 
 The solution to manage a global `count` state is really good, but what if we could have a custom hook that can be used to manage any kind of state, not only `counter` state, that uses a Redux-like approach?
 
@@ -1324,7 +1336,7 @@ export default ProductItem;
 
 
 
-## Performing async task before updating the state
+## Final state management solution with side effects
 
 So far, so good. Our custom hook solution works like a charm, but what if we want to perform async tasks before/after updating the state?
 
@@ -1525,7 +1537,9 @@ So, to recap, the timesClicked propery is updated only if data has been successf
 
 Feel free to start smashing the `Favourite` buttons and check the log messages in the console log, it's really fun 🤓
 
-## Pros and cons of the custom hook solution:
+
+
+## Pros and cons of the custom hook solution with side effects
 
 ### Advantages:
 
@@ -1574,17 +1588,9 @@ If you have reached this point, massive congrats!🎉
 
 It's no enough to read blogposts to get good at React hooks and state management, you need to spend time on your keyboard building apps, so I encourage you to do that 🤓
 
-And from now on, you can use this global state management solution in your side projects,  if you want to avoid using a statement solution libray or React Context.
+And from now on, you can use this global state management solution in your side projects,  if you want to avoid using a state management solution libray or React Context.
 
-Happy coding! 💻
-
-
-
-deploy the apps! and share links, so people can play with them
-
-
-
-
+💻Happy coding! 💻
 
 
 
