@@ -311,7 +311,7 @@ Here is the code explained step by step:
 
 2. If you have functions as a dependancy, make sure you wrap them with `useCallback` so the they are the same object when the component re-renders, like this:
 
-   ````
+   ````jsx
    // useCallback approach
    
    const SomeComponent = () => {
@@ -328,7 +328,7 @@ Here is the code explained step by step:
    }
    ````
 
-   ````
+   ````jsx
    // workaround
    
    const SomeComponent = () => {
@@ -394,7 +394,7 @@ export default Widget;
 
 The component looks much leaner, and many other components can use that custom hook to query for data, that's great!
 
-The only downside is that for every component using the custom hook, a new request to the API is made, but that can be fixed, you'll see the solution by the end of this tutorial. One way to check for this it to check the `Network` tab, and we'll see as many `GET` requests to the API as many components using that hook are shown on the screen.
+The only downside is that for every component using the custom hook, a new request to the API is made, but that can be fixed using the [final custom hook]()  One way to check for this it to check the `Network` tab, and we'll see as many `GET` requests to the API as many components using that hook are shown on the screen.
 
 Another way to check how many times the fetch function was fired, is to add a `debugger`to the hook , like this:
 
@@ -1580,7 +1580,17 @@ One disadvantage over Redux:
 
    
 
-   
+
+## Bonus
+
+Do you remember the duplicate http calls to get the list of posts we had when using the `useApi` hook? (in this [section](first-custom-hookexample) of the article)
+
+We can now solve the problem by using the [useStore hook with side effects ](final-state-management-solution-with-side-effects)with the store configured like this:
+
+````
+````
+
+❌ keep debugging posts store
 
 ## Conclusion
 
@@ -1591,6 +1601,8 @@ It's no enough to read blogposts to get good at React hooks and state management
 And from now on, you can use this global state management solution in your side projects,  if you want to avoid using a state management solution libray or React Context.
 
 💻Happy coding! 💻
+
+
 
 
 
