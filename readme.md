@@ -1596,6 +1596,10 @@ And by calling `FETCH_POSTS` at a high level of the app, so all the components (
 
 ❌ create only one Counter app with 2 branches
 
+❌ check that code snippets are up to date with the repos
+
+
+
 ## Conclusion
 
 If you have reached this point, massive congrats!🎉
