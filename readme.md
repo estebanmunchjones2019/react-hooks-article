@@ -262,16 +262,16 @@ It can take you some time around to wrap your head around this idea 🥴, but ov
 
 ## First custom hook example
 
-Here is the custom hook called `useApi` that will solve our code duplication problem:
+Here is the custom hook called `usePosts` that will solve our code duplication problem:
 
 ```jsx
-// src/hooks/useApi.js
+// src/hooks/usePosts.js
 
 // import built in React hooks
 import { useEffect, useState } from "react";
 
 // this is the custom hook
-const useApi = () => {
+const usePosts = () => {
   const [apiData, setApiData] = useState([]);
 
   useEffect(() => {
@@ -286,7 +286,7 @@ const useApi = () => {
   return apiData;
 }
 
-export default useApi;
+export default usePosts;
 ```
 
 Here is the code explained step by step:
@@ -299,9 +299,9 @@ Here is the code explained step by step:
 
 4. Once the component `Posts.js` or `Widget.js` has been rendered, the second time it re-renders, the `useEffect's` callback function is called again, and that's when the API is hit.
    
-   As a side note, if we had another `useEffect` inside `Posts.js` for example, that function will be called **at the same time** as the `useEffect` inside `useApi`.
+   As a side note, if we had another `useEffect` inside `Posts.js` for example, that function will be called **at the same time** as the `useEffect` inside `usePosts`.
 
-5. We return the `apiData` array, as we wanna use it for displaying some posts in the UI. The good thing is that when the variable `apiData` is updated inside `useApi` hook, that will trigger a re-render on `Posts.js` or `Widget.js` and the updated value of `useApi` will be reflected on the template!
+5. We return the `apiData` array, as we wanna use it for displaying some posts in the UI. The good thing is that when the variable `apiData` is updated inside `usePosts` hook, that will trigger a re-render on `Posts.js` or `Widget.js` and the updated value of `usePosts` will be reflected on the template!
 
 6. Then we export the hook, so we can call it inside components.
 
@@ -344,16 +344,16 @@ Here is the code explained step by step:
    ````
    
 
-Now that our `useApi` custom hook is ready, let's use it inside our components!
+Now that our `usePosts` custom hook is ready, let's use it inside our components!
 
 ```jsx
 // Posts.js
 
 import React from 'react';
-import useApi from '../../useApi-hook/useApi';
+import usePosts from '../../usePosts-hook/usePosts';
 
 const Posts = props => {
-    const apiData = 👉 useApi();
+    const apiData = 👉 usePosts();
   const posts = apiData.slice(0,9).map(item => {   
     return <li>{item.title}</li> add body
 });
@@ -376,7 +376,7 @@ import React from 'react';
 
 const Widget = props => {
 
- const apiData = 👉 useApi();
+ const apiData = 👉 usePosts();
 
   const posts = apiData.slice(0,2).map(item => {   
     return <li>{item.title}</li>;
@@ -1583,14 +1583,18 @@ One disadvantage over Redux:
 
 ## Bonus
 
-Do you remember the duplicate http calls to get the list of posts we had when using the `useApi` hook? (in this [section](first-custom-hookexample) of the article)
+Do you remember the duplicate http calls to get the list of posts we had when using the `usePosts` hook? (in this [section](first-custom-hookexample) of the article)
 
 We can now solve the problem by using the [useStore hook with side effects ](final-state-management-solution-with-side-effects)with the store configured like this:
 
 ````
 ````
 
-❌ keep debugging posts store
+And by calling `FETCH_POSTS` at a high level of the app, so all the components (even the most nested ones) using the `posts` have it available when they render (or they can get them as soon as the single http call response arrives).
+
+❌ create a Posts app with 2 branches: one for the usePosts hook (2 fetch requests), and the other with the useStore hook (single request);
+
+❌ create only one Counter app with 2 branches
 
 ## Conclusion
 
