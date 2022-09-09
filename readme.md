@@ -241,7 +241,11 @@ const [apiData, setApiData] = useState([]);
 }
 ```
 
-First, we would get an error saying: `error -here` ❌
+First, we would get an error saying: 
+
+````
+React Hook "useState" is called in function "duplicatedCode" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word "use"
+````
 
 The problem here is that the piece of logic we want to abstract contains built in hooks, like `useState` and `useEffec`, which are tied to the component lifecycle and state.
 
@@ -396,7 +400,21 @@ The component looks much leaner, and many other components can use that custom h
 
 The only downside is that for every component using the custom hook, a new request to the API is made, but that can be fixed using the [final custom hook]()  One way to check for this it to check the `Network` tab, and we'll see as many `GET` requests to the API as many components using that hook are shown on the screen.
 
+When developing, there will be 4 post request when the 2 components are on the screen, and that's because of an extra run React does in development mode ❌ (investigate more).
+
+Here is a screenshot of the app after it was built with and served with these commands❌
+
 Another way to check how many times the fetch function was fired, is to add a `debugger`to the hook , like this:
+
+```bash
+// run these commands inside at the root level of your react app
+
+$ npm run build
+$ npm install -g serve
+$ serve -s build
+```
+
+
 
 ```jsx
 debbuger;
@@ -416,6 +434,8 @@ There are more things hooks can do:
 2. Return objects, arrays, anything!
 
 💡 Remember: hooks are functions, so they can take arguments and return any type of data
+
+The code of this more complex hook example can be found on [this repo](https://github.com/academind/react-complete-guide-code/tree/15-building-custom-react-hooks/code/07-using-the-hook-in-more-cmp).
 
 Let's image we have these two components, `App.js` and `NewTask.js` that connect to an API to read and create some tasks respectively:
 
@@ -825,7 +845,7 @@ Let's find out! 🤓
 
 ## Scope of state in hooks
 
-Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app ([repo link here](https://github.com/estebanmunchjones2019/counter-app)) that displays two counters and 2 buttons to increase it.
+Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app ([repo link here](https://github.com/estebanmunchjones2019/counter-app), `master` branch) that displays two counters and 2 buttons to increase it.
 
 ````jsx
 // src/hooks/useCounter.js
@@ -939,7 +959,7 @@ To overcome this issue of hooks having different states for each component using
 
 ## Global counter example
 
-Let's try to create a global counter ([repo link here](https://github.com/estebanmunchjones2019/counter-app-global-state)) that any component on the app can update and read the most updated value 🤯
+Let's try to create a global counter ([repo link here](https://github.com/estebanmunchjones2019/counter-app), `use-counter-store` branch) that any component on the app can update and read the most updated value 🤯
 
 The structure of the hook should be something like this
 
@@ -1593,8 +1613,6 @@ We can now solve the problem by using the [useStore hook with side effects ](fin
 And by calling `FETCH_POSTS` at a high level of the app, so all the components (even the most nested ones) using the `posts` have it available when they render (or they can get them as soon as the single http call response arrives).
 
 ❌ create a Posts app with 2 branches: one for the usePosts hook (2 fetch requests), and the other with the useStore hook (single request);
-
-❌ create only one Counter app with 2 branches
 
 ❌ check that code snippets are up to date with the repos
 
