@@ -29,7 +29,7 @@ Table of contents:
 
 - [What are hooks?](#what-are-hooks?)
 
-- [Spotting duplicated code](spotting-duplicated-code)
+- [Spotting duplicated code](#spotting-duplicated-code)
 
 - [First custom hook example](#first-custom-hook-example)
   
@@ -38,14 +38,14 @@ Table of contents:
 
 **Building a global store**
 
-- [Global state management requirements](global-state-management-requirements)
-- [Global counter example](global-counter-example)
-- [Final global state management solution](final-global-state-management-solution)
-- [Final state management solution with side effects](final-state-management-solution-with-side-effects)
+- [Global state management requirements](#global-state-management-requirements)
+- [Global counter example](#global-counter-example)
+- [Final global state management solution](#final-global-state-management-solution)
+- [Final state management solution with side effects](#final-state-management-solution-with-side-effects)
 
-- [Pros and cons of the custom hook solution with side effects](pros-and-cons-of-the-custom-hook-solution-with-side-effects)
+- [Pros and cons of the custom hook solution with side effects](#pros-and-cons-of-the-custom-hook-solution-with-side-effects)
 
-- [Conclusion](conclusion)
+- [Conclusion](#conclusion)
 
 ## What is global state?
 
@@ -96,7 +96,7 @@ So, the plan for this tutorial is to use a **React custom hook** to
 
 ## What are hooks?
 
-If you know about hooks, feel free to jump to section ❌
+If you already feel comfortable using hooks, feel free to jump to [this section](#global-state-management-requirements).
 
 Hooks are **functions** that start with the name `use` and then the name of something else, like `State`, giving the full name  `useState`, as an example.
 
@@ -398,32 +398,25 @@ export default Widget;
 
 The component looks much leaner, and many other components can use that custom hook to query for data, that's great!
 
-The only downside is that for every component using the custom hook, a new request to the API is made, but that can be fixed using the [final custom hook]()  One way to check for this it to check the `Network` tab, and we'll see as many `GET` requests to the API as many components using that hook are shown on the screen.
+The only downside is that for every component using the custom hook, a new request to the API is made. One way to check for this it to check the `Network` tab, and we'll see as many `GET` requests to the API as many components using that hook are shown on the screen.
 
-When developing, there will be 4 post request when the 2 components are on the screen, and that's because of an extra run React does in development mode ❌ (investigate more).
+When developing, there will be 4 post request when the 2 components are on the screen, so 2 requests per component that uses `usePosts` hook 🤔. That's because `useEffect` runs twice in development mode.
 
-Here is a screenshot of the app after it was built with and served with these commands❌
-
-Another way to check how many times the fetch function was fired, is to add a `debugger`to the hook , like this:
+To see how the app behaves in production, we can build it:
 
 ```bash
-// run these commands inside at the root level of your react app
+// run these commands at the root level of your react app
 
 $ npm run build
 $ npm install -g serve
 $ serve -s build
 ```
 
+And see the amount of http requests per component:
 
+![](./images/posts-request.png)
 
-```jsx
-debbuger;
-const rawData = await fetch("https://jsonplaceholder.typicode.com/posts");
-```
-
-and open the developer tools of your browser. We'll get the code stoped as many times as the number of components on the screen using that hook.
-
-
+The issue of having one request per component is fixed in [this section](#bonus).
 
 ## A more complex hook example
 
@@ -1611,6 +1604,8 @@ We can now solve the problem by using the [useStore hook with side effects ](fin
 ````
 
 And by calling `FETCH_POSTS` at a high level of the app, so all the components (even the most nested ones) using the `posts` have it available when they render (or they can get them as soon as the single http call response arrives).
+
+![](./images/posts-request-2.png)
 
 ❌ create a Posts app with 2 branches: one for the usePosts hook (2 fetch requests), and the other with the useStore hook (single request);
 
