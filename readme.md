@@ -2,7 +2,7 @@
 
 Learn how to use React custom hooks 🪝to manage global state across the app **without** the need of  the`Context API` or libraries like Redux or MobX 🤯.
 
-This is not a boring theory tutorial, it's a hands on one 💪, so we're gonna build this [demo app](https://replace-redux-with-custom-hook.web.app/) that uses a custom hook solution to manage global state and performs side effects (async tasks) when updating the state 🚀
+This is not a boring theory tutorial, it's a hands on one 💪, so we're gonna build this [demo app](https://replace-redux-with-custom-hook.web.app/) that uses a custom hook solution to manage global state and performs side effects (async tasks) before updating the state 🚀
 
 This is the [gitHub repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) with the code for:
 
@@ -14,7 +14,7 @@ The content of this tutorial is based on this course: [React 16: The Complete Co
 👉 Big thanks to the reviewers:
 
 - Gonzalo Aguirre [@_gonaguirre_](https://twitter.com/_gonaguirre), from Underscope ([Underscope - We deliver world-class mobile apps using React Native](https://underscope.io/)), a React Native company based in South America
-- Fabiha Kathun
+- [DCThomson](https://github.com/dc-thomson) Newsbrands Engineering team
 
 Table of contents:
 
@@ -141,16 +141,17 @@ const Posts = props => {
       // and if it works wihtout it.
     }, []);
 
-  // then apiData is used in the template
+  // then apiData is used in the template to display the first 9 posts
   const posts = apiData.slice(0,9).map(item => {   
     return <li>{item.title}</li> <li>{item.body}</li>;
 });
   return (
-// React.fragments and title
-    // add title here
-      <ul>
-          {posts}
-      </ul>
+       <div className="Posts">
+          <h2>Posts component</h2>
+          <ul>
+            {postsJSX}
+          </ul>
+       </div>
   );
 };
 
@@ -175,27 +176,26 @@ const Widget = props => {
           setApiData(data);
         }
         fetchData();
-    // see if I get an error with empty dependancy array.
-      // and if it works wihtout it.
     }, []);
 
-  // then apiData is used in the template to show only 3 posts
+  // then apiData is used in the template to show only 2 posts
   const posts = apiData.slice(0,2).map(item => {   
     return <li>{item.title}</li>;
 });
   return (
-// React.fragments and title
-    // change to <ol>
-      <ul>
-          {posts}
-      </ul>
+      <div className="Widget">
+          <h2>Widget component</h2>
+          <ol>
+            {postsJSX}
+          </ol>
+      </div>
   );
 };
 
 export default Widget;
 ```
 
-Note: array destructuring is used to assign variables `apiData` and `setApiData`, so if you'r not familiar with it, check out this [MDN Doc](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)
+Note: array destructuring is used to assign variables `apiData` and `setApiData`, so if you're not familiar with it, check out this [MDN Doc](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)
 
 If we look at both components, we see a lot of duplication:
 
@@ -215,9 +215,9 @@ const [apiData, setApiData] = useState([]);
     }, []);
 ```
 
- So **we need to outsource that repeated code into an function, outisde the components.**
+ So **we need to outsource that repeated code into an function that lives outisde the components.**
 
-The logic we need to abstract needs to call an API when the first render of `Posts.js` or `Widget.js` components happened, and then, when the asynchronous call to the API finished, the state of those component needs to get updated.
+The logic we need to abstract needs to call an API when the first render of `Posts.js` or `Widget.js` components happened, and then, when the asynchronous call to the API finished, the state of those component that need to get updated.
 
 If we put all the logic into a normal function, like this:
 
@@ -234,30 +234,28 @@ const [apiData, setApiData] = useState([]);
           setApiData(data);
         }
         fetchData();
-    // see if I get an error with empty dependancy array.
-      // and if it works wihtout it.
     }, []);
 
 }
 ```
 
-First, we would get an error saying: 
+We're gonna get an error saying: 
 
 ````
 React Hook "useState" is called in function "duplicatedCode" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word "use"
 ````
 
-The problem here is that the piece of logic we want to abstract contains built in hooks, like `useState` and `useEffec`, which are tied to the component lifecycle and state.
+The problem here is that the piece of logic we want to abstract contains built in hooks, like `useState` and `useEffect`, which are tied to the components' lifecycle and state.
 
-**The function has no way to know what's going on inside the components calling this hook (`Posts.js` and `Widget.js`)?** 
+**The function has no way to know what's going on inside the components calling this hook (e.g `Posts.js` and `Widget.js`)**
 
-Even having those  `useEffect` and `useState` built in hooks inside that logic is not enough.
+Even having those  `useEffect` and `useState` hooks inside that `duplicatedCode` function is not enough.
 
 So, **the problem is the function needs to be more connected to what's going on inside the component.**
 
 And that's what **custom hooks** solve! 🎉
 
-Custom hooks can have any built in hooks inside it, like `useEffect` and `useState` (and also other custom hooks, like `useWhatever`) so every time the component that uses the hook re-renders, `useState` runs inside the the hook, and everytime we set up state inside the hook using `useState`, is the same as setting up state inside the component 🤯
+Custom hooks can have any built in hooks inside it, like `useEffect` and `useState` (and also other custom hooks, like `useWhatever`) so every time the component that uses the custom hook re-renders, `useEffect` runs inside the the hook, and everytime we set up state inside the hook using `useState`, is the same as setting up state inside the component 🤯
 👉 That's our connection problem solved! 👈
 
 It can take you some time around to wrap your head around this idea 🥴, but over time it will become natural 😌.
@@ -266,7 +264,7 @@ It can take you some time around to wrap your head around this idea 🥴, but ov
 
 ## First custom hook example
 
-Here is the custom hook called `usePosts` that will solve our code duplication problem:
+Here is a custom hook called `usePosts` that will solve our code duplication problem:
 
 ```jsx
 // src/hooks/usePosts.js
@@ -276,18 +274,18 @@ import { useEffect, useState } from "react";
 
 // this is the custom hook
 const usePosts = () => {
-  const [apiData, setApiData] = useState([]);
+  const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-      const fetchData = async() =>{
-        const rawData = await fetch("https://jsonplaceholder.typicode.com/posts");
-        const data = await rawData.json();
-        setApiData(data);
+      const fetchPosts = async() =>{
+        const rawPosts = await fetch("https://jsonplaceholder.typicode.com/posts");
+        const postsArray = await rawPosts.json();
+        setPosts(postsArray);
       }
-      fetchData();
-  }, []);
+      fetchPosts();
+  }, [setPosts]);
 
-  return apiData;
+  return posts;
 }
 
 export default usePosts;
@@ -302,7 +300,7 @@ Here is the code explained step by step:
 3. We initialize the state as an empty arrayby typing: `const [apiData, setApiData] = useState([]);` and that's the same is initializing state inside the component `Posts.js` or `Widget.js`.
 
 4. Once the component `Posts.js` or `Widget.js` has been rendered, the second time it re-renders, the `useEffect's` callback function is called again, and that's when the API is hit.
-   
+
    As a side note, if we had another `useEffect` inside `Posts.js` for example, that function will be called **at the same time** as the `useEffect` inside `usePosts`.
 
 5. We return the `apiData` array, as we wanna use it for displaying some posts in the UI. The good thing is that when the variable `apiData` is updated inside `usePosts` hook, that will trigger a re-render on `Posts.js` or `Widget.js` and the updated value of `usePosts` will be reflected on the template!
@@ -311,9 +309,9 @@ Here is the code explained step by step:
 
 💡Useful notes about the `useEffect` dependacy array:
 
-1. the `useEffect` dependancies array doesn't have `setApiData` added to it as it's a built in function of React that never changes (guaranteed by React), so it's the same pointer on re-renders
+1. `setPosts` is added to the dependancy array of the `useEffect` hook, because is a function that's being defined outisde `useEffect`. This addition doesn't cause an infitnite loop because `setPosts` is always the same function pointer every time the `usePosts` function runs, because that is guaranteed by React.
 
-2. If you have functions as a dependancy, make sure you wrap them with `useCallback` so the they are the same object when the component re-renders, like this:
+2. If you have functions as a dependancy (functions not returned by a built in React hook), make sure you wrap them with `useCallback` so the they are the same object when the component re-renders, like this:
 
    ````jsx
    // useCallback approach
@@ -1587,27 +1585,130 @@ And this is an **advantage** over Redux:
 
 One disadvantage over Redux:
 
-1. #### Debugging experience
+1. #### Unnecessary re-renders
 
-   No Redux debugging tools through the [Redux Devtools extension]((https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en))  can be used in the browser to debug state.
+   When any slice of the state changes, all components using the store re-render, no matter if they're interested in that slice or not. This could be solved by having as many hooks as slices we want in the state (1 hook per slice).
 
-   
+2. #### Debugging experience
+
+No Redux debugging tools through the [Redux Devtools extension]((https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en))  can be used in the browser to debug state.
+
+
 
 
 ## Bonus
 
-Do you remember the duplicate http calls to get the list of posts we had when using the `usePosts` hook? (in this [section](first-custom-hookexample) of the article)
+Do you remember the duplicated http calls to get the list of posts we had when using the `usePosts` hook? ( shown in [this section](first-custom-hookexample) of the article).
 
 We can now solve the problem by using the [useStore hook with side effects ](final-state-management-solution-with-side-effects)with the store configured like this:
 
-````
+````jsx
+// src/hooks/posts-store.js
+
+import { initStore } from './store';
+
+const configureStore = () => {
+    const actions = {
+      	👇
+        SET_POSTS: (curState, dispatch, data) => {
+            return { posts: [...data] };
+        },
+    }
+
+    const sideEffects = {
+      	👇
+        FETCH_POSTS: async (curState, dispatch, payload) => {
+            try {
+                const rawData = await fetch("https://jsonplaceholder.typicode.com/posts");
+                const data = await rawData.json();
+                dispatch('SET_POSTS', data);
+            } catch (error) {
+                return;
+            }
+        }
+    }
+
+    initStore(actions, sideEffects, {
+        posts: [],
+    });
+};
+
+export default configureStore;
 ````
 
-And by calling `FETCH_POSTS` at a high level of the app, so all the components (even the most nested ones) using the `posts` have it available when they render (or they can get them as soon as the single http call response arrives).
+Then, we call `FETCH_POSTS` at a high level of the app, so all the components (even the most nested ones) using the `posts` have it available when they render (or they can get the posts as soon as the single http call response arrives).
+
+````jsx
+// src/App.js
+
+import { useEffect, useCallback  } from 'react';
+import './App.css';
+import Posts from './components/Posts';
+import Widget from './components/Widget';
+
+import { useStore } from  './hooks/store';
+
+
+function App() {
+  👇
+  const dispatch = useCallback(useStore()[1], []);
+
+  👇
+  useEffect(() => {
+    dispatch('FETCH_POSTS');
+  },[dispatch]);
+
+  return (
+    <div className="App">
+      <Posts />
+      <Widget />
+    </div>
+  );
+}
+
+export default App;
+
+````
+
+And this is how the posts are consumed:
+```jsx
+// src/components/Posts.js
+
+import "./Posts.css"
+import { useStore } from '../hooks/store';
+
+const Posts = () => {
+	👇
+   const globalState = useStore()[0];
+   
+   const postsJSX = globalState.posts.slice(0, 9).map(item => {
+        return (
+            <li>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+            </li>
+        );
+
+    });
+
+    return (
+        <div className="Posts">
+          <h2>Posts component</h2>
+          <ul>
+            {postsJSX}
+          </ul>
+        </div>
+    );
+}
+
+export default Posts;
+```
+
+After building and serving the app, we can see that there's only one http request 🎉, no matter how many components are rendered on the screen using consuming the `posts` slice.
 
 ![](./images/posts-request-2.png)
 
-❌ create a Posts app with 2 branches: one for the usePosts hook (2 fetch requests), and the other with the useStore hook (single request);
+The code of the above snippets can be found in [this repo](https://github.com/estebanmunchjones2019/posts-app/tree/use-store).
 
 ❌ check that code snippets are up to date with the repos
 
@@ -1620,6 +1721,8 @@ If you have reached this point, massive congrats!🎉
 It's no enough to read blogposts to get good at React hooks and state management, you need to spend time on your keyboard building apps, so I encourage you to do that 🤓
 
 And from now on, you can use this global state management solution in your side projects,  if you want to avoid using a state management solution libray or React Context.
+
+One interesting video about a new React API called [useSyncExternalStore](https://reactjs.org/docs/hooks-reference.html#usesyncexternalstore). There's [this amazing youtube video](https://youtu.be/GMeQ51MCegIthat) by Jack Herrington that uses that new React hook that makes the global store more performant by using selectors.
 
 💻Happy coding! 💻
 
