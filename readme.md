@@ -122,24 +122,22 @@ What if we have two components, `Posts.js` and `Widget.js`, that need to show a 
 Post.js only displays the first 10 posts from the API.
 
 ```jsx
-// src/Posts.js
+// src/components/Posts.js
 
 import { useEffect, useState } from "react";
 import React from 'react';
 
 const Posts = props => {
-    const [apiData, setApiData] = useState([]);
+    const [posts, setPosts] = useState([]);
 
     useEffect(() => {
-        const fetchData = async() =>{
-          const rawData = await fetch("https://jsonplaceholder.typicode.com/posts");
-          const data = await rawData.json();
-          setApiData(data);
-        }
-        fetchData();
-    // see if I get an error with empty dependancy array.
-      // and if it works wihtout it.
-    }, []);
+        const fetchPosts = async() =>{
+        	const rawPosts = await fetch("https://jsonplaceholder.typicode.com/posts");
+        	const postsArray = await rawPosts.json();
+        	setPosts(postsArray);
+     		}
+        fetchPosts();
+    }, [setPosts]);
 
   // then apiData is used in the template to display the first 9 posts
   const posts = apiData.slice(0,9).map(item => {   
@@ -161,25 +159,25 @@ export default Posts;
 And Widget.js displays just the first 3 posts from the list:
 
 ```jsx
-// src/Widget.js
+// src/components/Widget.js
 
 import { useEffect, useState } from "react";
 import React from 'react';
 
 const Widget = props => {
-    const [apiData, setApiData] = useState([]);
+    const [posts, setPosts] = useState([]);
 
     useEffect(() => {
-        const fetchData = async() =>{
-          const rawData = await fetch("https://jsonplaceholder.typicode.com/posts");
-          const data = await rawData.json();
-          setApiData(data);
-        }
-        fetchData();
-    }, []);
+        const fetchPosts = async() =>{
+        	const rawPosts = await fetch("https://jsonplaceholder.typicode.com/posts");
+        	const postsArray = await rawPosts.json();
+        	setPosts(postsArray);
+     		}
+        fetchPosts();
+    }, [setPosts]);
 
   // then apiData is used in the template to show only 2 posts
-  const posts = apiData.slice(0,2).map(item => {   
+  const posts = posts.slice(0,2).map(item => {   
     return <li>{item.title}</li>;
 });
   return (
@@ -201,18 +199,16 @@ If we look at both components, we see a lot of duplication:
 
 ```jsx
 // duplicated code
-const [apiData, setApiData] = useState([]);
+const [posts, setPosts] = useState([]);
 
-    useEffect(() => {
-        const fetchData = async() =>{
-          const rawData = await fetch("https://jsonplaceholder.typicode.com/posts");
-          const data = await rawData.json();
-          setApiData(data);
-        }
-        fetchData();
-    // see if I get an error with empty dependancy array.
-      // and if it works wihtout it.
-    }, []);
+useEffect(() => {
+  const fetchPosts = async() =>{
+    const rawPosts = await fetch("https://jsonplaceholder.typicode.com/posts");
+    const postsArray = await rawPosts.json();
+    setPosts(postsArray);
+  }
+  fetchPosts();
+}, [setPosts]);
 ```
 
  So **we need to outsource that repeated code into an function that lives outisde the components.**
@@ -225,17 +221,16 @@ If we put all the logic into a normal function, like this:
 // WRONG APPROACH!!
 
 export const duplicatedCode = () => {
-const [apiData, setApiData] = useState([]);
+	const [posts, setPosts] = useState([]);
 
     useEffect(() => {
-        const fetchData = async() =>{
-          const rawData = await fetch("https://jsonplaceholder.typicode.com/posts");
-          const data = await rawData.json();
-          setApiData(data);
-        }
-        fetchData();
-    }, []);
-
+        const fetchPosts = async() =>{
+        	const rawPosts = await fetch("https://jsonplaceholder.typicode.com/posts");
+        	const postsArray = await rawPosts.json();
+        	setPosts(postsArray);
+     		}
+        fetchPosts();
+    }, [setPosts]);
 }
 ```
 
@@ -263,6 +258,8 @@ It can take you some time around to wrap your head around this idea 🥴, but ov
 
 
 ## First custom hook example
+
+The code below is stored in [this repo](https://github.com/estebanmunchjones2019/posts-app)
 
 Here is a custom hook called `usePosts` that will solve our code duplication problem:
 
@@ -349,58 +346,82 @@ Here is the code explained step by step:
 Now that our `usePosts` custom hook is ready, let's use it inside our components!
 
 ```jsx
-// Posts.js
+// src/components/Posts.js
 
-import React from 'react';
-import usePosts from '../../usePosts-hook/usePosts';
+import "./Posts.css"
+import usePosts from "../hooks/usePosts";
 
-const Posts = props => {
-    const apiData = 👉 usePosts();
-  const posts = apiData.slice(0,9).map(item => {   
-    return <li>{item.title}</li> add body
-});
-  return (
-      <ul>
-// add title
-          {posts}
-      </ul>
-  );
-};
+const Posts = () => {
+
+   const posts = 👉 usePosts();
+   
+   const postsJSX = posts.slice(0, 9).map(item => {
+        return (
+          <li>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+          </li>
+        );
+
+    });
+
+    return (
+        <div className="Posts">
+          <h2>Posts component</h2>
+          <ul>
+            {postsJSX}
+          </ul>
+        </div>
+    );
+}
 
 export default Posts;
 ```
 
 ```jsx
-// Widget.js
+// src/components/Widget.js
 
-import { useEffect, useState } from "react";
-import React from 'react';
+import "./Widget.css";
+import usePosts from "../hooks/usePosts";
 
-const Widget = props => {
+const Widget = () => {
 
- const apiData = 👉 usePosts();
+    const posts = 👉 usePosts();
 
-  const posts = apiData.slice(0,2).map(item => {   
-    return <li>{item.title}</li>;
-});
-  return (
-// React.fragments and title
-      <ul>
-          {posts}
-      </ul>
-  );
-};
+    const postsJSX = posts.slice(9, 11).map(item => {
+        return (
+            <li>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+            </li>
+        );
+
+    });
+
+    return (
+        <div className="Widget">
+            <h2>Widget component</h2>
+            <ol>
+                {postsJSX}
+            </ol>
+        </div>
+    );
+}
 
 export default Widget;
 ```
 
 The component looks much leaner, and many other components can use that custom hook to query for data, that's great!
 
-The only downside is that for every component using the custom hook, a new request to the API is made. One way to check for this it to check the `Network` tab, and we'll see as many `GET` requests to the API as many components using that hook are shown on the screen.
+The only downside is that for every component rendered on the screen using the custom hook, a new request to the API is made. One way to check for this it to check the `Network` tab, and we'll see the `GET` requests to the API:
 
-When developing, there will be 4 post request when the 2 components are on the screen, so 2 requests per component that uses `usePosts` hook 🤔. That's because `useEffect` runs twice in development mode.
+![](./images/posts-request-00.png)
 
-To see how the app behaves in production, we can build it:
+
+
+When developing this demo app, there will be 4 post request made when the 2 components are on the screen, so 2 requests per component that uses `usePosts` hook 🤔. Don't worry, that's because `useEffect` runs twice in development mode.
+
+To see how the app behaves in production (with no double `useEffect` runs) , we can build it and serve it:
 
 ```bash
 // run these commands at the root level of your react app
@@ -414,7 +435,7 @@ And see the amount of http requests per component:
 
 ![](./images/posts-request.png)
 
-The issue of having one request per component is fixed in [this section](#bonus).
+So, in production, we have one http request per component that uses the `usePosts`. That is not ideal, and we'd like to have just one http call and store the response in memory. The code of that fix can be found in [this section](#bonus).
 
 ## A more complex hook example
 
@@ -1709,8 +1730,6 @@ After building and serving the app, we can see that there's only one http reques
 ![](./images/posts-request-2.png)
 
 The code of the above snippets can be found in [this repo](https://github.com/estebanmunchjones2019/posts-app/tree/use-store).
-
-❌ check that code snippets are up to date with the repos
 
 
 
