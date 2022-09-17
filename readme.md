@@ -259,7 +259,7 @@ It can take you some time around to wrap your head around this idea 🥴, but ov
 
 ## First custom hook example
 
-The code below is stored in [this repo](https://github.com/estebanmunchjones2019/posts-app)
+The code below is stored in [this repo](https://github.com/estebanmunchjones2019/posts-app) (use the `master` branch)
 
 Here is a custom hook called `usePosts` that will solve our code duplication problem:
 
@@ -452,7 +452,8 @@ The code of this more complex hook example can be found on [this repo](https://g
 Let's image we have these two components, `App.js` and `NewTask.js` that connect to an API to read and create some tasks respectively:
 
 ```jsx
-// App.js
+// /src/App.js
+
 // it fetches taks from the backend databse and displays them
 
 import React, { useEffect, useState } from 'react';
@@ -517,7 +518,8 @@ export default App;
 ```
 
 ```jsx
-// NewTask.js
+// /components/NewTask.js
+
 // it adds new tasks to the database in the backend
 // and updates the App's component state `tasks`
 
@@ -596,7 +598,7 @@ The code that's common to both components is:
 The custom hook we can create to move this logic to looks like this:
 
 ```jsx
-// use-http.js
+// /src/hooks/use-http.js
 
 import { useState, useCallback } from 'react';
 
@@ -667,7 +669,7 @@ The above useCallback usage is done in case we wanna comply with the dependancy 
 Here is how the components use this hook:
 
 ```jsx
-// App.js
+// /src/App.js
 
 import React, { useEffect, useState } from 'react';
 
@@ -720,7 +722,7 @@ export default App;
 Side note: `const { isLoading, error, sendRequest: fetchTasks } = useHttp();` means that `sendRequest` is being renamed to `fetchTasks`.
 
 ```jsx
-// NewTask.js
+// /src/components/NewTask.js
 
 import Section from '../UI/Section';
 import TaskForm from './TaskForm';
@@ -764,7 +766,8 @@ export default NewTask;
 There's a tricky part here:
 
 ```jsx
- // NewTask.js
+ // /src/components/NewTask.js
+
  // What a heck is this? 🤔
  const enterTaskHandler = async (taskText) => {
      ...
@@ -776,7 +779,7 @@ There's a tricky part here:
 Well, our `applyData` callback function expects only one argument `data`:
 
 ```jsx
-// use-http.js
+// /src/hooks/use-http.js
 
 const sendRequest = useCallback(async (requestConfig, applyData) => {
     ...
@@ -788,7 +791,7 @@ const sendRequest = useCallback(async (requestConfig, applyData) => {
 and the function `createTask` we pass as `applyData` takes two arguments `taskText` and  `taskData`
 
 ```jsx
-// NewTask.js
+// /src/components/NewTask.js
 
 const createTask = (taskText, taskData) => { 👈 // expects 2 arguments
     props.onAddTask(createdTask);
@@ -813,7 +816,8 @@ The first argument is the context, which is `null`, beause we don't wanna change
 To avoid the usage of this `bind()` method, the other option could be defining `createTask` inside `enterTaskHandler`, like this:
 
 ```jsx
-// NewTask.js
+// /src/components/NewTask.js
+
 import Section from '../UI/Section';
 import TaskForm from './TaskForm';
 import useHttp from '../../hooks/use-http';
@@ -857,7 +861,7 @@ Let's find out! 🤓
 
 ## Scope of state in hooks
 
-Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app ([repo link here](https://github.com/estebanmunchjones2019/counter-app), `master` branch) that displays two counters and 2 buttons to increase it.
+Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app ([repo link here](https://github.com/estebanmunchjones2019/counter-app), use the `master` branch) that displays two counters and 2 buttons to increase it.
 
 ````jsx
 // src/hooks/useCounter.js
@@ -971,7 +975,7 @@ To overcome this issue of hooks having different states for each component using
 
 ## Global counter example
 
-Let's try to create a global counter ([repo link here](https://github.com/estebanmunchjones2019/counter-app), `use-counter-store` branch) that any component on the app can update and read the most updated value 🤯
+Let's try to create a global counter ([repo link here](https://github.com/estebanmunchjones2019/counter-app), use  `use-counter-store` branch) that any component on the app can update and read the most updated value 🤯
 
 The structure of the hook should be something like this
 
@@ -1074,7 +1078,7 @@ Some notes about the code:
 - Register the interested components: the first time an interested component calls the hook (when being mounted to the Virtual DOM), we need to add the `setCounter` function pointer to an array, called `listeners`. Each setCounter pointer is linked to the component that called the hook. That way, every time we call the useState functions referenced in the array, every component will re-render, and that way, they will be able to display the updated value of the global variable `globalCounter`.
 
 - An important note about the `listeners` array. is that the first `setCounter` function there corresponds the most parent component in the app that uses that hook, then we have the children's functions, grandchildren, and so on. That way, we ensure that when there's a change of state, the first to component to know about it is the most parent component, and not the children. If we hadn't this specific order in `listeners` we could have this error on the console:
-  ```
+  ```bash
    Warning: Cannot update a component (`ProductItem`) while rendering a different component (`ProductItem`). To locate the bad setState() call inside `ProductItem`, follow the stack trace as described in https://fb.me/setstate-in-render
       in ProductItem (at Products.js:15)
       in ul (at Products.js:13)
@@ -1104,6 +1108,8 @@ The state is global now!
 
 
 ## Final global state management solution
+
+Check out the code in [this repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) (use the `master` branch)
 
 The solution to manage a global `count` state is really good, but what if we could have a custom hook that can be used to manage any kind of state, not only `counter` state, that uses a Redux-like approach?
 
@@ -1307,6 +1313,7 @@ const Products = props => {
   // we're just interested in reading the state, not dispatching and action
   👇
   const state = useStore()[0];
+  
   return (
     <ul className="products-list">
         👇
@@ -1369,6 +1376,8 @@ export default ProductItem;
 
 
 ## Final state management solution with side effects
+
+Check out the code in [this repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook/tree/async) (use the `async` branch)
 
 So far, so good. Our custom hook solution works like a charm, but what if we want to perform async tasks before/after updating the state?
 
@@ -1619,7 +1628,7 @@ No Redux debugging tools through the [Redux Devtools extension]((https://chrome.
 
 ## Bonus
 
-Do you remember the duplicated http calls to get the list of posts we had when using the `usePosts` hook? ( shown in [this section](first-custom-hookexample) of the article).
+Do you remember the multiple http calls to get the list of posts we had when using the `usePosts` hook? (shown in [this section](first-custom-hookexample) of the article).
 
 We can now solve the problem by using the [useStore hook with side effects ](final-state-management-solution-with-side-effects)with the store configured like this:
 
@@ -1725,6 +1734,8 @@ const Posts = () => {
 export default Posts;
 ```
 
+The `useStore` hook is used in the same way in `Posts.js` and `Widget.js`.
+
 After building and serving the app, we can see that there's only one http request 🎉, no matter how many components are rendered on the screen using consuming the `posts` slice.
 
 ![](./images/posts-request-2.png)
@@ -1739,9 +1750,7 @@ If you have reached this point, massive congrats!🎉
 
 It's no enough to read blogposts to get good at React hooks and state management, you need to spend time on your keyboard building apps, so I encourage you to do that 🤓
 
-And from now on, you can use this global state management solution in your side projects,  if you want to avoid using a state management solution libray or React Context.
-
-One interesting video about a new React API called [useSyncExternalStore](https://reactjs.org/docs/hooks-reference.html#usesyncexternalstore). There's [this amazing youtube video](https://youtu.be/GMeQ51MCegIthat) by Jack Herrington that uses that new React hook that makes the global store more performant by using selectors.
+Hre's one [amazing YouTube video](https://youtu.be/GMeQ51MCegIthat) by Jack Herrington about a new React API called [useSyncExternalStore](https://reactjs.org/docs/hooks-reference.html#usesyncexternalstore),  that makes the global store more performant by using selectors, it's worth checking it out!
 
 💻Happy coding! 💻
 
