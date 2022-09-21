@@ -2,9 +2,9 @@
 
 Learn how to use React custom hooks 🪝to manage global state across the app **without** the need of  the`Context API` or libraries like Redux or MobX 🤯.
 
-This is not a boring theory tutorial, it's a hands on one 💪, so we're gonna build this [demo app](https://replace-redux-with-custom-hook.web.app/) that uses a custom hook solution to manage global state and performs side effects (async tasks) before updating the state 🚀
+This is not a boring theory tutorial but it's a hands on one 💪, so we're gonna build this [demo app](https://replace-redux-with-custom-hook.web.app/) that uses a custom hook solution to manages global state and performs side effects (async tasks) before updating it 🚀
 
-This is the [gitHub repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) with the code for:
+This is the [gitHub repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) with these 2 branches:
 
 - [master](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) branch: custom hook solution without side effects
 - [async](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook/tree/async) branch: custom hook solution with side effects
@@ -14,7 +14,6 @@ The content of this tutorial is based on this course: [React 16: The Complete Co
 👉 Big thanks to the reviewers:
 
 - Gonzalo Aguirre [@_gonaguirre_](https://twitter.com/_gonaguirre), from Underscope ([Underscope - We deliver world-class mobile apps using React Native](https://underscope.io/)), a React Native company based in South America
-- [DCThomson](https://github.com/dc-thomson) Newsbrands Engineering team
 
 Table of contents:
 
@@ -51,48 +50,46 @@ Table of contents:
 
 In the React world the UI part of apps are made up of components, which are small units of code that render a view, and all of them are part of what is called a component tree.
 
-Component tree chart here. ❌
-
-What if we'd like to access some piece of data on different parts of the app? We'd be forced to keep state in a parent component that wraps the interested parts of the component tree.
+What if we'd like to access some piece of data in different parts of the app? We'd be forced to keep state in a parent component that wraps the interested parts of the component tree.
 
 Then, we could pass down the data via props to the interested parts, but that would lead to prop drilling. 
 
 But hang on, what is prop drilling? Is when the same prop is passed through a long chain of components, making it repetitive and difficult to maintain.
 
-Prop drilling chart here ❌
+In the following image, we can can see a function called `toggleFav` being passed 5 levels down as a prop, that doesn't look like a good architecture, doesn't it?
+
+![](./images/prop-drilling-chart.png)
 
 ## Is Context API the solution to manage it?
 
 There's a solution that is widely adopted in the React community to fix the propr drilling issue, and is the usage of the built in `Context API`, but it presents these 2 downsides:
 
-- It's not meant and optimised for passing down high frequency changing data, like the `isFavourite` boolean property of a product item in an ecommerce app, but was meant for passing down more static things like `theme` variables, `login status`, `language`, and so on.
-- After any of the data passed down via props through the Context API changes, all the components wrapped by the Provider that uses useContext will re-render, no matter if they use that specific piece of data or not. That could be patched by using the `useMemo` hook, but using that function is not for free, and will slow the performance of component tree re-rendering cycle and bloat your code.
+- It's not meant and optimised for passing down **high frequency** changing data, like the `isFavourite` boolean property of a product item in an ecommerce app, but it was meant for passing down more static things like `theme` variables, `login status`, `language`, and so on.
+- After any of the data passed down via props through the Context API changes, all the components wrapped by the Provider that uses useContext will re-render, no matter if they use that specific piece of data or not. That could be patched by using the `useMemo` hook, but using that function is not for free, and will slow down the performance of the component tree re-rendering cycle and bloat your code.
 
-When I say frequency, I mean a property changing at least twice in the lifecycle of the app. Usually, those changes are triggered by a user input, like the mentioned example of clicking a heart icon on the product card, to mark it is as favourite.
+When I say **high frequency**, I mean a property changing at least twice in the lifecycle of the app. Usually, those changes are triggered by a user input, like clicking a heart icon on a product card, to mark it is as favourite.
 
 So, to anwser the question `Is Context API the solution?` It might not.
 
-To sum it up, using Context is a way to avoid prop drilling, but it's still keeping state **inside** a React component, that is part of the **component tree**, and that way, the architecture is tied to that limitation of always choosing a parent component to hold that state.
+To sum it up, using Context is a way to avoid prop drilling (by making the state available in a context), but it's still keeping state **inside** a React component, that is part of the **component tree**, and that way, the architecture is tied to that limitation of always  having to choose a parent component to hold that state.
 
-If you'r interested in seeing the usage of the `Context API` and it's limitations, check out this great article: https://kentcdodds.com/blog/how-to-use-react-context-effectively.
+If you're interested in seeing the usage of the `Context API` and it's limitations, check out this [great article](https://kentcdodds.com/blog/how-to-use-react-context-effectivel)  by [Kent C. Dodds](https://kentcdodds.com/).
 
 ## State management solution libraries
 
-This issue of keeping state in React without hitting the problem of prop drilling, has been address initialy by the [Redux](https://redux.js.org/) library, by keeping state **outside components**.
+This challenge of keeping state in React without hitting the problem of prop drilling, has been address initialy by the [Redux](https://redux.js.org/) library, by keeping state **outside components**.
 
-Storing the state of the app outisde the component tree was the thing that made this library the go-to management solution for React, in other words, decoupling the app state and the UI components.
+Storing the state of the app outisde the component tree was the thing that made this library the go-to management solution for React, in other words, decoupling the app state from the UI components.
 
 How does Redux work work? A store is created and then components can subscribe to changes to it, and dispatch actions that modify that state. Other libraries need to be added on top of Redux to perform asynchronous operations (or called side effects) before updating the state, like [Redux-Saga](https://redux-saga.js.org/) and [Redux-Thunk](https://github.com/reduxjs/redux-thunk).
 
-There other state management solutions out there as well, like [Zustand]([Zustand Documentation](https://docs.pmnd.rs/zustand/introduction)), [Jotai](https://jotai.org/) , [Recoil](https://recoiljs.org/) (still in beta), [Rematch](https://rematchjs.org/) and [MobX]([README · MobX](https://mobx.js.org/README.html)).
+There are other state management solutions out there as well, like [Zustand]([Zustand Documentation](https://docs.pmnd.rs/zustand/introduction)), [Jotai](https://jotai.org/) , [Recoil](https://recoiljs.org/) (still in beta), [Rematch](https://rematchjs.org/) and [MobX]([README · MobX](https://mobx.js.org/README.html)), among other.
 
-To have an idea of the usage of the mentioned libraries, check out the chart here [@rematch/core vs jotai vs mobx vs react-redux vs recoil vs zustand | npm trends](https://www.npmtrends.com/@rematch/core-vs-jotai-vs-mobx-vs-react-redux-vs-recoil-vs-zustand)
+To have an idea of the popularity of the mentioned libraries, check out the chart here [@rematch/core vs jotai vs mobx vs react-redux vs recoil vs zustand | npm trends](https://www.npmtrends.com/@rematch/core-vs-jotai-vs-mobx-vs-react-redux-vs-recoil-vs-zustand)
 
-Using libraries could be a great idea, but in this tutorial, you'll learn how to use the built in tools React offers to solve our problems, which are `hooks` in this case, so you can, at the end of the article, have a better knowlegde or React basics.
+Using libraries could be a great idea, but in this tutorial, you'll learn how to use a built in React tool, which are `hooks`, to solve our prop drilling problem.
 
-So, the plan for this tutorial is to use a **React custom hook** to
-
- 👉 **keep state outside of components** 👈 and **manage global state** with them.
+So, the plan for this tutorial is to use a **React custom hook** to 👉 **keep state outside of components** 👈 and **manage global state** with them.
 
 ## What are hooks?
 
