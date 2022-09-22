@@ -89,7 +89,7 @@ To have an idea of the popularity of the mentioned libraries, check out the char
 
 Using libraries could be a great idea, but in this tutorial, you'll learn how to use a built in React tool, which are `hooks`, to solve our prop drilling problem.
 
-So, the plan for this tutorial is to use a **React custom hook** to 👉 **keep state outside of components** 👈 and **manage global state** with them.
+So, the plan for this tutorial is to use a **React custom hook** to 👉 **keep state outside of components** 👈 to **manage global state** with it.
 
 ## What are hooks?
 
@@ -100,23 +100,23 @@ Hooks are **functions** that start with the name `use` and then the name of some
 There are:
 
 - **built in hooks**, like `useState`, and `useEffect`, `useCallback`, etc, that come already built in inside the React library code and we can import them from there.
-  They help updating the state and do things when some `state` or `props` change on functional components, among other things.
+  They help updating the state or do things when some `state` or `props` change on functional components, among other things.
   `useState`, and` useEffect` made the full switch from class based to functional components possible.
   
-  You can have a look at hooks here: https://reactjs.org/docs/hooks-intro.html
+  You can have a look at some hooks' documentation [here]( https://reactjs.org/docs/hooks-intro.html)
 
-- **Custom hooks** that we can use in components and other custom hooks, and they're helpful to move stateful logic/side effects outisde functional components so it can be re-used and at the same time, make the components leaner.
+- **Custom hooks** that we can use in components and other custom hooks, and they're helpful to move stateful logic and side effects outisde functional components so they can be re-used and, at the same time, make the components leaner.
 
 There are certain rules when using these hooks:
 ![](./images/rules-of-hooks-01.jpg)![](./images/rules-of-hooks-02.jpg)
 
-In the coming sections, we'll take a look at 2 custom hooks to understand them in depth, all with code examples and repos.
+In the coming sections, we'll take a look at 2 custom hooks to understand them in depth, all with code examples and github repositories.
 
 ## Spotting duplicated code
 
-What if we have two components, `Posts.js` and `Widget.js`, that need to show a list of posts from an API with different markup and amount of posts?
+What if we have two components, `Posts.js` and `Widget.js`, that need to show a list of posts from an API with different markup and posts coming from the same API?
 
-Post.js only displays the first 10 posts from the API.
+Post.js only displays the first 9 posts from the API.
 
 ```jsx
 // src/components/Posts.js
@@ -153,7 +153,7 @@ const Posts = props => {
 export default Posts;
 ```
 
-And Widget.js displays just the first 3 posts from the list:
+And Widget.js displays the 10th and 11th posts from the list:
 
 ```jsx
 // src/components/Widget.js
@@ -173,8 +173,8 @@ const Widget = props => {
         fetchPosts();
     }, [setPosts]);
 
-  // then apiData is used in the template to show only 2 posts
-  const posts = posts.slice(0,2).map(item => {   
+  // then apiData is used in the template to show the 10th and 11th posts
+  const posts = posts.slice(9, 11).map(item => {   
     return <li>{item.title}</li>;
 });
   return (
@@ -190,9 +190,9 @@ const Widget = props => {
 export default Widget;
 ```
 
-Note: array destructuring is used to assign variables `apiData` and `setApiData`, so if you're not familiar with it, check out this [MDN Doc](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)
+Note: array destructuring is used to assign the variables `apiData` and `setApiData`, so if you're not familiar with it, check out this [MDN Doc](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment)
 
-If we look at both components, we see a lot of duplication:
+If we look at both components, we see a lot of code duplication:
 
 ```jsx
 // duplicated code
@@ -210,12 +210,15 @@ useEffect(() => {
 
  So **we need to outsource that repeated code into an function that lives outisde the components.**
 
-The logic we need to abstract needs to call an API when the first render of `Posts.js` or `Widget.js` components happened, and then, when the asynchronous call to the API finished, the state of those component that need to get updated.
+The logic we need to abstract needs to:
+
+- call an API when the first render of `Posts.js` or `Widget.js` components happened
+-  When the asynchronous call to the API finished, the state of both components need to get updated (so they can acually show the posts on the screen).
 
 If we put all the logic into a normal function, like this:
 
 ```jsx
-// WRONG APPROACH!!
+// WRONG APPROACH!! ⚠️
 
 export const duplicatedCode = () => {
 	const [posts, setPosts] = useState([]);
@@ -231,19 +234,17 @@ export const duplicatedCode = () => {
 }
 ```
 
-We're gonna get an error saying: 
+When trying to compile this code, we're gonna get an error saying: 
 
 ````
 React Hook "useState" is called in function "duplicatedCode" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word "use"
 ````
 
-The problem here is that the piece of logic we want to abstract contains built in hooks, like `useState` and `useEffect`, which are tied to the components' lifecycle and state.
+The problem here is that the piece of logic we want to abstract contains 2 built in hooks:`useState` and `useEffect`, which are tied to the components' lifecycle and state, and they'r not meant to be used in regular functions.
 
-**The function has no way to know what's going on inside the components calling this hook (e.g `Posts.js` and `Widget.js`)**
+**The function has no way to know what's going in terms of state and re-renders inside the components calling it **
 
-Even having those  `useEffect` and `useState` hooks inside that `duplicatedCode` function is not enough.
-
-So, **the problem is the function needs to be more connected to what's going on inside the component.**
+So, **the problem is the function needs to know more about what's going on inside the component.**
 
 And that's what **custom hooks** solve! 🎉
 
@@ -256,7 +257,7 @@ It can take you some time around to wrap your head around this idea 🥴, but ov
 
 ## First custom hook example
 
-The code below is stored in [this repo](https://github.com/estebanmunchjones2019/posts-app) (use the `master` branch)
+The code below is stored in [this repo's master branch](https://github.com/estebanmunchjones2019/posts-app)
 
 Here is a custom hook called `usePosts` that will solve our code duplication problem:
 
@@ -291,7 +292,7 @@ Here is the code explained step by step:
 
 2. Then, we create a function (Yes! custom hooks are functions) BUT, we need to start its name with `use`.
 
-3. We initialize the state as an empty arrayby typing: `const [apiData, setApiData] = useState([]);` and that's the same is initializing state inside the component `Posts.js` or `Widget.js`.
+3. We initialize the state as an empty array by typing: `const [apiData, setApiData] = useState([]);` and that's the same is initializing state inside the component `Posts.js` or `Widget.js`.
 
 4. Once the component `Posts.js` or `Widget.js` has been rendered, the second time it re-renders, the `useEffect's` callback function is called again, and that's when the API is hit.
 
@@ -303,9 +304,9 @@ Here is the code explained step by step:
 
 💡Useful notes about the `useEffect` dependacy array:
 
-1. `setPosts` is added to the dependancy array of the `useEffect` hook, because is a function that's being defined outisde `useEffect`. This addition doesn't cause an infitnite loop because `setPosts` is always the same function pointer every time the `usePosts` function runs, because that is guaranteed by React.
+1. `setPosts` is added to the dependancy array of the `useEffect` hook, because is a function that's being defined outisde `useEffect`. This addition doesn't cause an infitnite loop because `setPosts` is always the same function's pointer every time the `usePosts` function runs, because setPosts is a function that updates the `posts` state (a function returned when calling `useState` hook). React guarantees us that setPosts will always be the same function's pointer on re-renders.
 
-2. If you have functions as a dependancy (functions not returned by a built in React hook), make sure you wrap them with `useCallback` so the they are the same object when the component re-renders, like this:
+2. If you have functions as a dependancy (functions not returned by a built in React hook) of `useEffect`, make sure you wrap them with `useCallback` hook, so the they'r the same object when the component re-renders, like this:
 
    ````jsx
    // useCallback approach
@@ -320,7 +321,7 @@ Here is the code explained step by step:
    	useEffect(() => {
    		someFunction();
    		// some other code here
-   	}, [👉someFunction])
+   	}, [👉 someFunction])
    }
    ````
 
@@ -333,14 +334,14 @@ Here is the code explained step by step:
    	  const someFunction(){
    	    // function body here
    		}
+       // and then we call it
    		someFunction();
-   		// some other code here
    	}, [])
    }
    ````
    
 
-Now that our `usePosts` custom hook is ready, let's use it inside our components!
+Now that our `usePosts`custom hook is ready, let's use it inside our components!
 
 ```jsx
 // src/components/Posts.js
@@ -408,15 +409,13 @@ const Widget = () => {
 export default Widget;
 ```
 
-The component looks much leaner, and many other components can use that custom hook to query for data, that's great!
+The components look much leaner, and many other components can use that custom hook to query for data, that's great!
 
-The only downside is that for every component rendered on the screen using the custom hook, a new request to the API is made. One way to check for this it to check the `Network` tab, and we'll see the `GET` requests to the API:
+The only downside is that for every component rendered on the screen using the custom hook, a new request to the API is made. One way to check for this it to open the `Network` tab, and we'll see the `GET` requests made to the API:
 
 ![](./images/posts-request-00.png)
 
-
-
-When developing this demo app, there will be 4 post request made when the 2 components are on the screen, so 2 requests per component that uses `usePosts` hook 🤔. Don't worry, that's because `useEffect` runs twice in development mode.
+When developing this demo app, there will be 4 post request made when the 2 components are on the screen, so 2 requests per component that uses the `usePosts` hook 🤔. Don't worry, that's because `useEffect` runs twice in development mode.
 
 To see how the app behaves in production (with no double `useEffect` runs) , we can build it and serve it:
 
@@ -432,7 +431,7 @@ And see the amount of http requests per component:
 
 ![](./images/posts-request.png)
 
-So, in production, we have one http request per component that uses the `usePosts`. That is not ideal, and we'd like to have just one http call and store the response in memory. The code of that fix can be found in [this section](#bonus).
+So, in production, we have **one http request per component** that uses the `usePosts`. That is not ideal, and we'd like to have just one http call and store the response in memory. The code of that fix can be found in [this section](#bonus).
 
 ## A more complex hook example
 
@@ -442,11 +441,11 @@ There are more things hooks can do:
 
 2. Return objects, arrays, anything!
 
-💡 Remember: hooks are functions, so they can take arguments and return any type of data
+💡 Remember: hooks are functions, so they can take any arguments and return anything.
 
 The code of this more complex hook example can be found on [this repo](https://github.com/academind/react-complete-guide-code/tree/15-building-custom-react-hooks/code/07-using-the-hook-in-more-cmp).
 
-Let's image we have these two components, `App.js` and `NewTask.js` that connect to an API to read and create some tasks respectively:
+Let's imagine we have these two components, `App.js` and `NewTask.js` that connect to an API to read and create some tasks respectively:
 
 ```jsx
 // /src/App.js
@@ -515,7 +514,7 @@ export default App;
 ```
 
 ```jsx
-// /components/NewTask.js
+// /src/components/NewTask.js
 
 // it adds new tasks to the database in the backend
 // and updates the App's component state `tasks`
@@ -592,7 +591,7 @@ The code that's common to both components is:
     setIsLoading(false);
 ```
 
-The custom hook we can create to move this logic to looks like this:
+The custom hook we can create to move this logic looks like this:
 
 ```jsx
 // /src/hooks/use-http.js
@@ -635,15 +634,15 @@ const useHttp = () => {
 export default useHttp;
 ```
 
-The hook is returning these an object in this case, with 3 keys:
+The hook is returning an object with 3 keys:
 
-1. `isLoading` of type `boolean`
+1. `isLoading`, of type `boolean`
 
-2. `error` of type `string` or `null`;
+2. `error`, of type `string` or `null`;
 
 3. `sendRequest`, a function that calls the api, that can be called inside the component whenever it's suits it. The function takes two arguments:
    
-   a. `requestConfig`, that configures the http call with the appropiate `url`, `method`, `headers` and `body`.
+   a. `requestConfig`,an object that configures the http call with the appropiate `url`, `method`, `headers` and `body`.
    
    b. A callback function called `applyData`, that can update the UI by changing the state of the app.
 
@@ -653,7 +652,7 @@ You might notice the `useCallback` built in hook here:
  const sendRequest = useCallback(//more code here)
 ```
 
-That is done to make sure the `sendRequest` functions is the same object on every component re-render,and that way just make the useEffect callback function run just once (like when using the good old `ComponentDidMount()` method in class based components).
+As discussed in [this section](#first-custom-hook-example), that is done to make sure the `sendRequest`function is the same object pointer on every component re-render. That way, `sendRequest` can be safely added to a `useEffect` dependancy array, like this:
 
 ```jsx
 useEffect(() => {
@@ -661,9 +660,9 @@ useEffect(() => {
   }, [sendRequest]);
 ```
 
-The above useCallback usage is done in case we wanna comply with the dependancy array standards (we could leave it empty, and it would work as well).
+The above useCallback usage is done in case we wanna comply with the dependancy array standards (we could leave the dependancy array empty as well, and it would work too).
 
-Here is how the components use this hook:
+Here is how the components use the `useHttp` custom hook:
 
 ```jsx
 // /src/App.js
