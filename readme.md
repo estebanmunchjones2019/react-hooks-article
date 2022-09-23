@@ -715,7 +715,7 @@ function App() {
 export default App;
 ```
 
-Side note: `const { isLoading, error, sendRequest: fetchTasks } = useHttp();` means that `sendRequest` is being renamed to `fetchTasks`.
+Side note: `const { isLoading, error, sendRequest: 👉 fetchTasks } = useHttp();` means that `sendRequest` is being renamed to `fetchTasks`.
 
 ```jsx
 // /src/components/NewTask.js
@@ -764,15 +764,14 @@ There's a tricky part here:
 ```jsx
  // /src/components/NewTask.js
 
- // What a heck is this? 🤔
  const enterTaskHandler = async (taskText) => {
      ...
-     createTask.bind(null, taskText);👈❓
+     createTask.bind(null, taskText);👈❓ // What's the .bind thing? 🤔
      ...
  } 
 ```
 
-Well, our `applyData` callback function expects only one argument `data`:
+Well, our `applyData` callback function expects only one argument named `data`:
 
 ```jsx
 // /src/hooks/use-http.js
@@ -794,9 +793,11 @@ const createTask = (taskText, taskData) => { 👈 // expects 2 arguments
   };
 ```
 
-So we've got a problem: how we can possibly pass an extra argument `taskText` to `applyData`??
+So we've got a problem: how we can possibly pass an extra argument `taskText` to `applyData`?
 
-The `.bind` method lets us pre-configure (not execute) the function, so it takes the extra parameter `taskText` we need.
+The `.bind` method lets us pre-configure (not execute) the function, so it takes the extra parameter `taskText` we need!
+
+Here's some documentation about the `.bind` method:
 
 From [Function.prototype.bind() - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_objects/Function/bind):
 *The **`bind()`** method creates a new function that, when called, has its `this` keyword set to the provided value, with a given sequence of arguments preceding any provided when the new function is called.*
@@ -823,9 +824,9 @@ const NewTask = (props) => {
  const { isLoading, error, sendRequest: sendTaskRequest } = useHttp();
 
  const enterTaskHandler = async (taskText) => {
-👉 const createTask = (taskData) => {
     // taskText is defined in the scope of enterTaskHandler
     // I can safely use it.
+👉 const createTask = (taskData) => {
     const generatedId = taskData.name; // firebase-specific => "name" contains generated id
     const createdTask = { id: generatedId, text: taskText };
 
@@ -847,20 +848,20 @@ return //some
 JSX here
 ```
 
-If you've read to this point, congratulations! You have now a solid 💪 foundational knowledge of how hooks 🪝work, so let's move on the next section, where we'll explore what happens with state inside hooks.
+If you've read the article to this point, congratulations! You have now a solid 💪 foundational knowledge of how hooks 🪝work, so let's move on the next section, where we'll explore what happens with state inside hooks.
 
 There is an important question here:
 
 👉 Is the state inside hooks shared between the components that use it ❓❓❓🤔
 
-Let's find out! 🤓
+Let's find it out! 🤓
 
 ## Scope of state in hooks
 
-Sometimes, we want to have state that can be read and also changed from different parts of the app. To see how hooks manage their state, let's build a simple app ([repo link here](https://github.com/estebanmunchjones2019/counter-app), use the `master` branch) that displays two counters and 2 buttons to increase it.
+To see how hooks manage their state, let's build a simple app (stored at [this repo's master branch](https://github.com/estebanmunchjones2019/counter-app)) that displays two counters and 2 buttons to increase it.
 
 ````jsx
-// src/hooks/useCounter.js
+// /src/hooks/useCounter.js
 
 import { useState } from 'react';
 
@@ -881,7 +882,7 @@ export default useCounter;
 
 
 ```jsx
-// src/App.js
+// /src/App.js
 
 import Counter1 from './components/Counter1';
 import Counter2 from './components/Counter2';
@@ -906,7 +907,7 @@ export default App;
 ```
 
 ```jsx
-// src/Counter1.js
+// /src/Counter1.js
 
 import useCounter from "../hooks/useCounter";
 
@@ -926,7 +927,7 @@ export default Counter1;
 ```
 
 ```jsx
-// src/Counter2.js
+// /src/Counter2.js
 
 import useCounter from "../hooks/useCounter";
 
@@ -947,31 +948,39 @@ export default Counter2;
 
 
 
-If both components are using the same function `useCounter`, we would expect the `counter` state to be the same for both components, and when clicking any of the 2 buttons, we would see both counters to increment the values by one at the same time, but...
+If both components are using the same function `useCounter`, we would expect the `counter` state to be the same for both components, and when clicking any of the 2 buttons, we should see both counters increment their values by one at the same time, but...
 
 No!😯  the state is not shared, because each counter has different values 🤔
 
 ![](./images/counter-app.png)
 
-When calling the built in `useState` or `useReducer` inside custom hooks, the state stored "inside the hook" is **different** for every component calling that hook, in other words, **scoped to the component** using it.
+When calling the built in `useState` or `useReducer` inside custom hooks, the state that is stored "inside the hook" is **different** for every component calling that hook, in other words, the state is **scoped to the component** using it.
 
 That isn't very helpful if we want to have a global state, isn't it? 🤔
 
 ## Global state management requirements
 
-We have now finished understanding how hooks work, including how state is individual for each component using a custom hook.
+We have now finished understanding how hooks work, including how state is scoped to each component using a custom hook 🎉
 
 Let's first think about what things the global state management solution should do for us:
 
-1) Provide the same state to components and pass them a function to update it.
+1) Provide the same shared state to components and pass them a function to update it.
 
 2) When one components updates the state, the rest of the interested components should get the updated value.
 
-To overcome this issue of hooks having different states for each component using the hook, we need something that remains the same every time the hook is being called by components. An variable declared outisde the hook with the `let` keyword looks  like a really good candidate! 
+To overcome this issue of hooks having different states for each component using the hook, we need something that remains the same every time the hook is being called by components. A variable declared outisde the hook with the `let` keyword looks  like a really good candidate! Like this:
+
+````jsx
+let globalCounter = {}
+````
+
+
 
 ## Global counter example
 
-Let's try to create a global counter ([repo link here](https://github.com/estebanmunchjones2019/counter-app), use  `use-counter-store` branch) that any component on the app can update and read the most updated value 🤯
+Let's try to create a global counter app, that any component on the app can update and read the most updated value 🤯
+
+The code can fe found at [this repo's use-counter-store branch](https://github.com/estebanmunchjones2019/counter-app).
 
 The structure of the hook should be something like this
 
@@ -982,29 +991,30 @@ The structure of the hook should be something like this
 let globalCounter = {}
 
 // let's name the custom hook useStore
-const useCounterStore = () = {
+const useCounterStore = () => {
   // we can use the globalStore variable + useState hooks to share
   // the same state across components!
+  return globalCounter;
 }
 ````
 
 Having a variable defined outside the hook, that can be updated, is the first part of the puzzle solved. 
 
-The next step is to find a way to notify of the variable value changes to all the components that are using the hook and are displayed on the screen. This part is becoming tricky...🤔
+The next step is to find a way to notify of the variable's value changes to all the components that are using the hook. This part is becoming tricky...🤔
 
 In other words, if we have component A and B using the `useStore` custom hook, when component A changes the state (mutating the variable), component B should be notified that the state changed, and then be passed the new value.
 
 Let's jump directly to the solution and then discuss how it works:
 ````js
-// src/useCounterStore.js
+// /src/useCounterStore.js
 
 import { useState, useEffect } from 'react';
 
 // hardcoded value for the initial state
 let globalCounter = 0;
 
-// let's store the functions to update state for each interested component
-// this is an array of setCounter function pointers.
+// let's store the functions to update the state for each interested component
+// this is an array of setCounter's function pointers.
 let listeners = [];
 
 const useCounterStore = () => {
@@ -1028,7 +1038,7 @@ const useCounterStore = () => {
     // let's register the components when they call this hook for the first time by
     // pushing their corresponding setCounter function into the listeners array
   useEffect(() => {
-    //when the component did mount, its corresponding setCounter function is added to the list, as a pointer, like all functions
+    //when the component did mount, its corresponding setCounter function is added to the list, as a pointer
     listeners.push(setCounter);
 
     //There's an unmounting clean up function (which is a closure), that de-registers the component from the listeners
@@ -1048,7 +1058,7 @@ export default useCounterStore;
 ````
 
 ```jsx
-// src/Counter1.js
+// /src/Counter1.js
 
 import useCounterStore from "../hooks/useCounterStore";
 
@@ -1069,11 +1079,14 @@ export default Counter1;
 
 Some notes about the code:
 
-- Components that use counterGlobal won't be re-rendered just for the fact that variable changes, but because we'll trigger a setCounter inside each interested component. 
+- Components that use `counterGlobal` won't be re-rendered just for the fact that variable `globalCounter` changes, but because we'll trigger a setCounter of each interested component. 
 
-- Register the interested components: the first time an interested component calls the hook (when being mounted to the Virtual DOM), we need to add the `setCounter` function pointer to an array, called `listeners`. Each setCounter pointer is linked to the component that called the hook. That way, every time we call the useState functions referenced in the array, every component will re-render, and that way, they will be able to display the updated value of the global variable `globalCounter`.
+- Registration of the interested components: 
 
-- An important note about the `listeners` array. is that the first `setCounter` function there corresponds the most parent component in the app that uses that hook, then we have the children's functions, grandchildren, and so on. That way, we ensure that when there's a change of state, the first to component to know about it is the most parent component, and not the children. If we hadn't this specific order in `listeners` we could have this error on the console:
+  1. the first time an interested component calls the hook (when being mounted to the Virtual DOM), we need to add the `setCounter` function pointer to an array, called `listeners`. Each setCounter pointer is linked to the component that called the hook. 
+  2. That way, every time we call the useState functions referenced in the array, every component will re-render, and that way, they will be able to display the updated value of the global variable `globalCounter`.
+
+- An important note about the `listeners` array. is that the first `setCounter` function there corresponds the most parent component in the app that uses that hook, then we have the children's functions, grandchildren, and so on. That way, we ensure that when there's a change of state, the first component to know about it is the most parent component, and not the children. If we hadn't this specific order in `listeners` we could have this error on the console:
   ```bash
    Warning: Cannot update a component (`ProductItem`) while rendering a different component (`ProductItem`). To locate the bad setState() call inside `ProductItem`, follow the stack trace as described in https://fb.me/setstate-in-render
       in ProductItem (at Products.js:15)
@@ -1089,13 +1102,12 @@ Some notes about the code:
       because we were calling the setStates as they were stored in the list (from parents to children).
   ```
 
-- Clean up function: that anonymous functions is a closure. What does that mean? setCounter function is kind of trapped inside the outer anonymous function, and can be referenced  in the clean up function if we hadn't a closure, it would be hard to know which setCounter to remove from the list, because that useEffect function is being called by multiple components.
+- Clean up function: that anonymous functions is a closure. What does that mean? the setCounter value is being trapped at the moment of the cleanup function definition, as that function has been defined inside the scope of a parent function. Without this closure behaviour,  it would be hard to know which setCounter to remove from the list, because that useEffect function is being called by multiple components.
 
 - `setCounter` is passed to the `useEffect` dependancy array because it's an external dependancy, and in this case, it's not gonna change every time the hooks runs, because it's a built in React function that is guaranteed by React to stay the same (be the same pointer). 
 
-- 💡Remember, changes in props and state (only through calls to a setState function, called setCounter in this example) will trigger re-render in components.
+- 💡Remember, changes in props and state will trigger re-render in components. In this example,  only calls to `setCounter` function will trigger re-renders in components.
 
-  
 
 The state is global now!
 
@@ -1105,7 +1117,7 @@ The state is global now!
 
 ## Final global state management solution
 
-Check out the code in [this repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) (use the `master` branch)
+Check out the code in [this repo's master branch](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook)
 
 The solution to manage a global `count` state is really good, but what if we could have a custom hook that can be used to manage any kind of state, not only `counter` state, that uses a Redux-like approach?
 
@@ -1373,7 +1385,7 @@ export default ProductItem;
 
 ## Final state management solution with side effects
 
-Check out the code in [this repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook/tree/async) (use the `async` branch)
+Check out the code in [this repo's async branch](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook/tree/async).
 
 So far, so good. Our custom hook solution works like a charm, but what if we want to perform async tasks before/after updating the state?
 
