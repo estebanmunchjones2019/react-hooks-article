@@ -14,6 +14,7 @@ The content of this tutorial is based on this course: [React 16: The Complete Co
 👉 Big thanks to the reviewers:
 
 - Gonzalo Aguirre [@_gonaguirre_](https://twitter.com/_gonaguirre), from Underscope ([Underscope - We deliver world-class mobile apps using React Native](https://underscope.io/)), a React Native company based in South America
+- [Fabiha Khatun](https://www.linkedin.com/in/syeda-fabiha-khatun-9b378b122/) \- UK based Software Engineer
 
 Table of contents:
 
