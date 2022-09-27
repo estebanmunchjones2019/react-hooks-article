@@ -2,7 +2,7 @@
 
 Learn how to use React custom hooks 🪝to manage global state across the app **without** the need of  the`Context API` or libraries like Redux or MobX 🤯.
 
-This is not a boring theory tutorial but it's a hands on one 💪, so we're gonna build this [demo app](https://replace-redux-with-custom-hook.web.app/) that uses a custom hook solution to manages global state and performs side effects (async tasks) before updating it 🚀
+This is not a boring theory tutorial but it's a hands on one 💪, so we're gonna build this [demo app](https://replace-redux-with-custom-hook.web.app/) that uses a custom hook solution to manages global state and performs side effects (async tasks) before updating it, with a Redux-like approach. 🚀
 
 This is the [gitHub repo](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook) with these 2 branches:
 
@@ -1125,7 +1125,7 @@ The Redux approach is explained in detail on [this documentation](https://redux.
 
 There are two main concepts in Redux land: `actions` and `reducers`.
 
-Actions are objects with a `type` and a `payload`, that are dispatched (or fired) when certain things happen in the app (e.g add button clicked to add `Buy Milk` text to a list item) :
+Actions are objects with a `type` and a `payload`, that are dispatched (or fired) when certain things happen in the app (e.g add button clicked to add `Buy Milk` to a list of items) :
 
 ```
 // Action example:
@@ -1156,7 +1156,7 @@ function counterReducer(state = initialState, action) {
       todoList: [...todoList, action.payload]
     }
   }
-  // some more if checks here...
+  // some more `if` checks here...
   // otherwise return the existing state unchanged
   return state
 }
@@ -1210,11 +1210,11 @@ export const initStore = (userActions, initialState) => {
 
 Two functions are exported above:
 
-- `useStore`: this useStore hook will be called in the the files of the interested components
-- `initStore`: called in special JS files (e.g pwhere the initial state for each state slice and actions are set up from individual so the state con hold multiple slices of data e.g: globalState= { products: someData, orders: someData}  and so on.
+- `useStore`: this `useStore` hook will be called in the the files of the interested components
+- `initStore`: it will be called in special JS files (e.g products-store.js), from where the initial state for each state slice and actions are set up.
 
 ````javascript
-// /hooks-store/products-store.js
+// /src/hooks-store/products-store.js
 
 👇
 import { initStore } from './store';
@@ -1270,16 +1270,16 @@ export default configureStore;
 
 Some notes of the above code:
 
-- the `actions` `object` is just an object with keys that are the identifiers, and then, the key value is a function that takes state and a payload, and returns the new state. It's a **hybrid of a Redux action and reducer**
+- the `actions` `object` is just an object with keys that are the identifiers, and then, the key's value is a function that takes state and a payload, and returns the new state. It's a **hybrid of a Redux action and reducer**
 
-- The `initStore` function is called when the `configureStore` function is called in another JS file (e.g `index.js`, and that will change add the actions and initial state of the `products` slice.
+- The `initStore` function is called when the `configureStore` function is called in another JS file (`index.js`), and that will set the slice's initial state and its respective actions.
 
-  
+- Multiple state slices and actions can be added by calling `initStore` multiple times in different files (e.g orders-store.js).
 
 Let's see where `configureStore` is called:
 
 ````js
-// index.js
+// /src/index.js
 
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -1307,10 +1307,10 @@ Some notes:
 
 - In `Index.js` we can configure other slices of the store, like `orders` , `payments` etc, by first setting up config files like `/hooks-store/products-store.js` but named differently, like `/hooks-store/orders-store.js`, and then calling them here, e.g `configureOrdersStore`, etc.
 
-The `useStore` hook can be used inside components to read and update the data slices:
+The `useStore` hook can be used inside components to read and update the data slices; in this case we have only one slice called `products`:
 
 ````js
-// /containers/products.js
+// /src/containers/products.js
 
 import ProductItem from '../components/Products/ProductItem';
 import { useStore } from '../hooks-store/store';
@@ -1318,7 +1318,7 @@ import './Products.css';
 
 const Products = props => {
   
-  // we're just interested in reading the state, not dispatching and action
+  // we're just interested in reading the state, not dispatching an action
   👇
   const state = useStore()[0];
   
@@ -1343,6 +1343,8 @@ export default Products;
 ````
 
 ````js
+// /src/
+
 import React from 'react';
 
 import Card from '../UI/Card';
