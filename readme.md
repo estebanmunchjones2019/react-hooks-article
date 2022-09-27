@@ -1343,7 +1343,7 @@ export default Products;
 ````
 
 ````js
-// /src/
+// /src/components/Products/ProductItem.js
 
 import React from 'react';
 
@@ -1353,7 +1353,7 @@ import './ProductItem.css';
 
 const ProductItem = props => {
 
-  // we're just interested in dispatching and action, not in reading the state 
+  // we're just interested in dispatching an action, not in reading the state 
   👇
   const dispatch = useStore()[1];
 
@@ -1389,15 +1389,17 @@ export default ProductItem;
 
 Check out the code in [this repo's async branch](https://github.com/estebanmunchjones2019/replace-redux-with-custom-hook/tree/async).
 
-So far, so good. Our custom hook solution works like a charm, but what if we want to perform async tasks before/after updating the state?
+So far, so good. Our custom hook solution works like a charm, but what if we want to perform async tasks before updating the state?
 
-That async task could be a GET or POST request, and depending on the result, dispatch or not action, or just dispatching an action with fresh data from that API.
+That async task could be, for example, a GET or POST request, and depending on the result, dispatch or not action, or just dispatching an action with fresh data from that API.
 
-For this solution, let's make use of the async await features, that make the JavaScript code so nice to read.
+In this particular example, a new product's property called `timesClicked` will only be updated if a POST request to an analytics service has been successful.
+
+For this solution, let's make use of the `async await` features, that make the JavaScript code so nice to read.
 
 Heads up! If you'r gonna use the following snippets in production code, make sure you test it thoroughly, because it's an experimental hook 🧪.
 
-If you find the next pieces of code buggy, please submit a PR so we can improve it! 🚀
+If you find the next pieces of code buggy, please submit a PR so we can improve it 🚀
 
 ````javascript
 // /src/hooks-store/store.js
@@ -1415,19 +1417,20 @@ let sideEffects = {};
 export const useStore = () => {
   const setState = useState(globalState)[1];
 
-  const dispatch = 👉 async (actionIdentifier, payload) => {
-    👇
-    if (sideEffects[actionIdentifier]) {
+  const dispatch = async (actionIdentifier, payload) => {
+    console.log(`${actionIdentifier} action has been dispatched for ${payload.productId} product`);
+
+    if (👉 sideEffects[actionIdentifier]) {
       await sideEffects[actionIdentifier](globalState, dispatch, payload);
     }
-    👇
+
     const newState = actions[actionIdentifier] ? 
       actions[actionIdentifier](globalState, dispatch, payload) : 
-   	  { ...globalState 				};
+      { ...globalState };
   
     globalState = { ...globalState, ...newState };
 
-    console.log(`after running action: ${actionIdentifier} action for ${payload} product`,  'the updated globalState is: ', 				globalState );
+    console.log(`${actionIdentifier} action for ${payload.productId} product finished running`,  'the updated globalState is: ', globalState );
 
     for (const listener of listeners) {
       listener(globalState)
@@ -1456,13 +1459,17 @@ export const initStore = (userActions, 👉 userSideEffects, initialState) => {
 
 ````
 
-````javascript
+
+
+```javascript
+// /src/hooks-store/products-store.js
+
 import { initStore } from './store';
 
 👇
 // fake async task that takes 4 seconds to resolve
 const fakePostRequest = (payload) => {
-  console.log(`Posting : ${payload.productId} to analytics as favouriteL ${payload.newFavStatus}`);
+  console.log(`Posting : ${payload.productId} to analytics as favourite ${payload.newFavStatus}`);
   // this fakes sending the value of productId & newFavStatus to an analytics service everytime the button is clicked
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -1474,8 +1481,8 @@ const fakePostRequest = (payload) => {
 
 const configureStore = () => {
   const actions = {
-    TOGGLE_FAV: (curState, dispatch, productId) => {
-      const prodIndex = curState.products.findIndex(p => p.id === productId);
+    TOGGLE_FAV: (curState, dispatch, payload) => {
+      const prodIndex = curState.products.findIndex(p => p.id === payload.productId);
       const newFavStatus = !curState.products[prodIndex].isFavorite;
       const updatedProducts = [...curState.products];
       updatedProducts[prodIndex] = {
@@ -1483,13 +1490,13 @@ const configureStore = () => {
         isFavorite: newFavStatus
       };
 			👇
-      dispatch('POST_TO_ANALYTICS', { productId, newFavStatus });
+      dispatch('POST_TO_ANALYTICS', { productId: payload.productId, newFavStatus });
 
       return { products: updatedProducts };
     },
     👇
-    SET_TIMES_CLICKED: (curState, dispatch, productId) => {
-      const prodIndex = curState.products.findIndex(p => p.id === productId);
+    SET_TIMES_CLICKED: (curState, dispatch, payload) => {
+      const prodIndex = curState.products.findIndex(p => p.id === payload.productId);
       const updatedProducts = [...curState.products];
       updatedProducts[prodIndex] = {
         ...curState.products[prodIndex],
@@ -1502,12 +1509,12 @@ const configureStore = () => {
 	👇
   const sideEffects = {
    POST_TO_ANALYTICS: async (curState, dispatch, payload) => {
-        console.log(`POST_TO_ANALYTICS sideEffect is running for product ${payload} `, 'globalState is: ', curState,'payload is :', payload);
+        console.log(`POST_TO_ANALYTICS sideEffect is running for product ${payload.productId} `, 'globalState is: ', curState,'payload is :', payload);
         try {
           // fake call to post data to an Data analytics API
           // this is just an example, you might not do this in real life analytics
           await fakePostRequest(payload);
-          dispatch('SET_TIMES_CLICKED', payload.productId);
+          dispatch('SET_TIMES_CLICKED', {productId: payload.productId});
         } catch(error) {
           // analytics post failed, let's not dispatch the action to mark it as clicked
           return;
@@ -1521,8 +1528,8 @@ const configureStore = () => {
         id: 'p1',
         title: 'Red Scarf',
         description: 'A pretty red scarf.',
-        isFavorite: false,
         👇
+        isFavorite: false,
         timesClicked: 0
       },
       {
@@ -1551,40 +1558,36 @@ const configureStore = () => {
 };
 
 export default configureStore;
-````
+```
 
 Some notes about this solution:
 
-1. In `/src/hooks-store/store.js`:a
+1. In `/src/hooks-store/store.js`:
 
-- An `if` check and a `ternary expression` have been added inside the `dispatch` function body, in case some `actions` or `sideEffect` functions are not defined for a specific `actionIdentifier`
+- An `if` check and a `ternary expression` have been added inside the `dispatch` function body, to handle the case of not having an `actions` or `sideEffect` functions defined for a specific `actionIdentifier`.
 
 2. In `/src/hooks-store/products-store.js`:
 
-- `sideEffects` functions don't change state, they just run before actions,  they do async tasks (like posting data, geting data from endpoints, etc) and they then dispatch another action with some fresh data (if needed), or they could even not dispatch an action at all.
-- `actions` functions can also dispatch other actions. This is a difference with how Redux 
+- `sideEffects` functions don't change state, they just run before actions and they do async tasks (like posting data, geting data from endpoints, etc) and they then dispatch another action with some fresh data (if needed), or they could even not dispatch an action at all.
+- `actions` functions can also dispatch other actions. This is a difference with how Redux work. When dispatching an action from inside an action, make sure you pass the updated state as a payload to it.
 
-The expected beahaviour when a user toggles the `Favourite` button is the following:
+The expected behaviour when a user toggles the `Favourite` button on an unfaved product is the following:
 
-1.  The `Favourite` button is clicked
+1.  `TOGGLE_FAV` action is dispatched
+2.  `POST_TO_ANALYTICS` sideEffect is dispatched, holding the new `isFavourite` boolean value.
+3.  `POST_TO_ANALYTICS` sideEffect starts running
+4.  The fake POST request to analytics starts, with a request body holding the `productId` and the new `isFavourite` values.
+5.  The `isFavorite` boolean property of the product is toggled `true`
+6.  TOGGLE_FAV action  finishes running 
+7.  The UI reflects the change of the faved product.
+8.  The button text changes to `Un-favorite`.
+9.  The fake POST request returns a successful response, after 4 seconds
+10.  `SET_TIMES_CLICKED` action is dispatched
+11.  The property `timesClicked` of the product is incremented by 1.
+12.  `SET_TIMES_CLICKED` finished running.
+13.  POST_TO_ANALYTICS sideEffect finished running 
 
-2.  `TOGGLE_FAV` action is dispatched
-
-3.  The `isFavorite` boolean property of the product is toggled `true`.
-
-4.  `POST_TO_ANALYTICS` action is dispatched, holding the new `isFavourite` boolean value.
-
-5.  The button text changes to `Un-favorite`.
-
-6.  The post request to analytics starts, with a request body holding the `productId` and  `isFavourite` values.
-
-7.  After 4 seconds, the analytics server responds successfully.
-
-8.  `SET_TIMES_CLICKED` action is displayed, just passing the `productId` as payload
-
-9.  The property `timesClicked` of the product is incremented by 1.
-
-So, to recap, the timesClicked propery is updated only if data has been successfuly posted to an analytics server.
+So, to recap, the `timesClicked` propery is updated only if data has been successfuly posted to an analytics server.
 
 Feel free to start smashing the `Favourite` buttons and check the log messages in the console log, it's really fun 🤓
 
@@ -1594,7 +1597,7 @@ Feel free to start smashing the `Favourite` buttons and check the log messages i
 
 ### Advantages:
 
-Reading at the [Redux documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), the proposed solution with custom hooks shares these advantages with Redux:
+By Reading the [Redux documentation](https://redux.js.org/tutorials/fundamentals/part-2-concepts-data-flow), the proposed solution with custom hooks shares these advantages with Redux:
 
 #### 1.  Single Source of Truth: 
 
@@ -1607,19 +1610,19 @@ That way, when any component dispatches an action, the state is changed, and the
 
 2. #### State is Read-Only
 
-"The **global state** of your application is stored as an object inside a single **store**. Any given piece of data should only exist in one location, rather than being duplicated in many places.
+"The only way to change the state is to dispatch an **action** ..."
 
-This makes it easier to debug and inspect your app's state as things change, as well as centralizing logic that needs to interact with the entire application."
+"This way, the UI won't accidentally overwrite data, and it's easier to trace why a state update happened.."
 
 And this is an **advantage** over Redux:
 
 1. #### Lightweight
 
-   There's no dependancy on a library, we'r just using built in React features.
+   There's no dependancy on a library, we'r just using built in React features to manage state.
 
 2. #### Out of the box Async taks handling 
 
-   Make API calls and other async taks out of the box, plus call dispatch more actions inside actions
+   Make API calls and other async taks out of the box, without the need of another library, plus having the ability to call dispatch more actions inside actions (do this with care though)
 
 ### Disadvantages:
 
@@ -1631,7 +1634,7 @@ One disadvantage over Redux:
 
 2. #### Debugging experience
 
-No Redux debugging tools through the [Redux Devtools extension]((https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en))  can be used in the browser to debug state.
+No Redux debugging tools available through the [Redux Devtools extension]((https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en))  to debug state.
 
 
 
@@ -1643,7 +1646,7 @@ Do you remember the multiple http calls to get the list of posts we had when usi
 We can now solve the problem by using the [useStore hook with side effects ](final-state-management-solution-with-side-effects)with the store configured like this:
 
 ````jsx
-// src/hooks/posts-store.js
+// /src/hooks/posts-store.js
 
 import { initStore } from './store';
 
@@ -1676,10 +1679,10 @@ const configureStore = () => {
 export default configureStore;
 ````
 
-Then, we call `FETCH_POSTS` at a high level of the app, so all the components (even the most nested ones) using the `posts` have it available when they render (or they can get the posts as soon as the single http call response arrives).
+Then, we dispatch the `FETCH_POSTS` sideEffect at a high level of the app, so all the components (even the most nested ones) using the `posts` array have it available when they render (or they can get the posts as soon as the **single** http call response arrives).
 
 ````jsx
-// src/App.js
+// /src/App.js
 
 import { useEffect, useCallback  } from 'react';
 import './App.css';
@@ -1712,7 +1715,7 @@ export default App;
 
 And this is how the posts are consumed:
 ```jsx
-// src/components/Posts.js
+// /src/components/Posts.js
 
 import "./Posts.css"
 import { useStore } from '../hooks/store';
@@ -1746,7 +1749,7 @@ export default Posts;
 
 The `useStore` hook is used in the same way in `Posts.js` and `Widget.js`.
 
-After building and serving the app, we can see that there's only one http request 🎉, no matter how many components are rendered on the screen using consuming the `posts` slice.
+After building and serving the app, we can see that there's only one http request 🎉, no matter how many components are rendered on the screen using consuming custom hook.
 
 ![](./images/posts-request-2.png)
 
@@ -1760,7 +1763,7 @@ If you have reached this point, massive congrats!🎉
 
 It's no enough to read blogposts to get good at React hooks and state management, you need to spend time on your keyboard building apps, so I encourage you to do that 🤓
 
-Hre's one [amazing YouTube video](https://youtu.be/GMeQ51MCegIthat) by Jack Herrington about a new React API called [useSyncExternalStore](https://reactjs.org/docs/hooks-reference.html#usesyncexternalstore),  that makes the global store more performant by using selectors, it's worth checking it out!
+Here's one [amazing YouTube video](https://youtu.be/GMeQ51MCegIthat) by Jack Herrington about a new React API called [useSyncExternalStore](https://reactjs.org/docs/hooks-reference.html#usesyncexternalstore),  that makes the global store more performant by using selectors, it's worth checking it out!
 
 💻Happy coding! 💻
 
