@@ -49,11 +49,11 @@ Table of contents:
 
 ## What is global state?
 
-In the React world, the UI is mainly made up of components, which are small units of code that render a view, and all of them are part of a component tree.
+In the React world, the UI is made up of components, which are small units of code that render a view, and all of them are part of a component tree.
 
-What if we'd like to access some piece of data in different parts of the app? We'd be forced to keep state in a parent component that wraps the relevant parts of the component tree.
+What if we'd like to access some piece of data in different parts of the app? We'd be forced to keep state in a parent component that wraps the interested parts of the component tree.
 
-Then, we would pass the data down via props to the relevant parts, but that would lead to prop drilling. 
+Then, we would pass the data down via props to the interested parts, but that would lead to prop drilling. 
 
 But hang on, what is prop drilling? This is when the same prop is passed through a long chain of components, making it repetitive and difficult to maintain.
 
@@ -82,7 +82,7 @@ This challenge of keeping state in React without hitting the problem of prop dri
 
 Storing the state of the app outside the component tree was what made this library the go-to management solution for React, in other words, decoupling the app state from the UI components.
 
-How does Redux work? A store is created and then components can subscribe to changes, and dispatches actions that modify that state. Other libraries need to be added on top of Redux to perform asynchronous operations (or called side effects) before updating the state, like [Redux-Saga](https://redux-saga.js.org/) and [Redux-Thunk](https://github.com/reduxjs/redux-thunk).
+How does Redux work? A store is created and then, components can subscribe to store value changes and dispatch actions that modify those values. Other libraries need to be added on top of Redux to perform asynchronous operations (or called side effects) before updating the state, like [Redux-Saga](https://redux-saga.js.org/) and [Redux-Thunk](https://github.com/reduxjs/redux-thunk).
 
 There are other state management solutions out there as well, like [Zustand]([Zustand Documentation](https://docs.pmnd.rs/zustand/introduction)), [Jotai](https://jotai.org/), [Recoil](https://recoiljs.org/) (still in beta), [Rematch](https://rematchjs.org/) and [MobX]([README · MobX](https://mobx.js.org/README.html)), amongst others.
 
@@ -444,7 +444,7 @@ There are more things hooks can do:
 
 The code of this more complex hooks example can be found on [this repo](https://github.com/academind/react-complete-guide-code/tree/15-building-custom-react-hooks/code/07-using-the-hook-in-more-cmp).
 
-Let's imagine we have these two components, `App.js` and `NewTask.js` that connect to an AP,I to read and create some tasks respectively:
+Let's imagine we have these two components, `App.js` and `NewTask.js` that connect to an API to read and create some tasks respectively:
 
 ```jsx
 // /src/App.js
@@ -961,7 +961,7 @@ That isn't very helpful if we want to have a global state, is it? 🤔
 
 We have now finished understanding how hooks work, including how state is scoped to each component using a custom hook 🎉
 
-First lets think about what things the global state management solution should do for us:
+Let's first think about what things the global state management solution should do for us:
 
 1) Provide the same shared state to components and pass them a function to update it.
 
