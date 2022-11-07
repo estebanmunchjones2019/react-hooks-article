@@ -69,11 +69,11 @@ There is a solution that is widely adopted in the React community to fix the pro
 
 When I say **high frequency**, I mean a property changing at least twice in the lifecycle of the app. Usually, these changes are triggered by user input, like clicking a heart icon on a product card, to marking it is as a favourite item.
 
-So, to anwser the question `Is Context API the solution?` It might not be.
+If you're interested in seeing the classic usage of the `Context API` and its limitations, check out this [great article](https://kentcdodds.com/blog/how-to-use-react-context-effectivel) by [Kent C. Dodds](https://kentcdodds.com/).
+
+So, to anwser the question `Is Context API the solution?` It might not be... until you watch this amazing [video](https://www.youtube.com/watch?v=ZKlXqrcBx88&list=WL&index=20&t=1356s&ab_channel=JackHerrington) by Jack Herrington, which makes React Context fast and usable as a state management solution! check it out 🚀
 
 To sum it up, using Context is a way to avoid prop drilling (by making the state available in a context), but it's still keeping state **inside** a React component, that is part of the **component tree**, and this way, the architecture is tied to that limitation of always having to choose a parent component to hold that state.
-
-If you're interested in seeing the usage of the `Context API` and its limitations, check out this [great article](https://kentcdodds.com/blog/how-to-use-react-context-effectivel) by [Kent C. Dodds](https://kentcdodds.com/).
 
 ## State management solution libraries
 
